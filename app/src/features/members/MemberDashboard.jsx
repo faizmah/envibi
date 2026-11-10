@@ -6,6 +6,7 @@ import {
   subscribeToAccounts,
   subscribeToTransactions,
   subscribeToSavingsBoxes,
+  subscribeToApplications,
 } from '../../services/realtime/realtimeService'
 import {
   formatRupiah,
@@ -23,6 +24,8 @@ export default function MemberDashboard() {
   const [savingsBox, setSavingsBox] = useState(null)
   const [recentTransactions, setRecentTransactions] = useState([])
   const [physicalReport, setPhysicalReport] = useState(null)
+  const [pendingApplication, setPendingApplication] = useState(null)
+  const [approving, setApproving] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // Aggregated KPI
@@ -34,6 +37,19 @@ export default function MemberDashboard() {
 
     async function loadDashboard() {
       setLoading(true)
+
+      // 0. Ambil pengajuan rekening terakhir
+      const { data: apps } = await supabase
+        .from('account_applications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (apps && apps.length > 0) {
+        setPendingApplication(apps[0])
+      } else {
+        setPendingApplication(null)
+      }
 
       // 1. Ambil rekening member
       const { data: accs } = await supabase
@@ -99,13 +115,29 @@ export default function MemberDashboard() {
     const unsubAccounts = subscribeToAccounts(user.id, () => loadDashboard())
     const unsubTxs = subscribeToTransactions(user.id, () => loadDashboard())
     const unsubBoxes = subscribeToSavingsBoxes(user.id, () => loadDashboard())
+    const unsubApps = subscribeToApplications(user.id, () => loadDashboard())
 
     return () => {
       unsubAccounts?.()
       unsubTxs?.()
       unsubBoxes?.()
+      unsubApps?.()
     }
   }, [user])
+
+  const handleQuickApprove = async (appId) => {
+    setApproving(true)
+    const { data, error } = await supabase.rpc('approve_account_application', {
+      p_application_id: appId,
+      p_admin_notes: 'Persetujuan Otomatis (Mode Uji Coba)',
+    })
+    setApproving(false)
+    if (error || !data?.ok) {
+      alert('Gagal menyetujui: ' + (error?.message || data?.error || 'Terjadi kesalahan'))
+    } else {
+      window.location.reload()
+    }
+  }
 
   // Hitung selisih saldo pembukuan vs saldo fisik dilaporkan
   const bookBalance = Number(activeAccount?.book_balance || 0)
@@ -123,6 +155,82 @@ export default function MemberDashboard() {
 
   // Jika belum ada rekening sama sekali
   if (accounts.length === 0) {
+    // KASUS A: Member sudah mengajukan dan statusnya masih PENDING atau UNDER_REVIEW
+    if (pendingApplication && (pendingApplication.status === 'PENDING' || pendingApplication.status === 'UNDER_REVIEW')) {
+      return (
+        <div style={{ maxWidth: '780px', margin: '40px auto', padding: '0 20px' }}>
+          <div className="card" style={{ padding: '36px 28px', border: '1px solid rgba(245, 166, 35, 0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ fontSize: '40px', lineHeight: 1 }}>⏳</div>
+              <div>
+                <span className="status wait" style={{ fontSize: '12px', fontWeight: '800' }}>
+                  STATUS PENGAJUAN: {pendingApplication.status}
+                </span>
+                <h2 style={{ margin: '6px 0 0', fontSize: '22px', fontWeight: '800' }}>
+                  Pengajuan Rekening Sedang Ditinjau Admin
+                </h2>
+              </div>
+            </div>
+
+            <p style={{ color: 'var(--fg-muted)', fontSize: '14px', lineHeight: '1.6', margin: '0 0 20px' }}>
+              Pengajuan pembukaan rekening <strong>{pendingApplication.account_type}</strong> Anda telah berhasil diterima oleh sistem pada <strong>{formatDateTime(pendingApplication.created_at)}</strong> dan saat ini dalam antrean verifikasi oleh Admin Bank.
+            </p>
+
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.03)',
+              borderRadius: '14px',
+              padding: '16px 20px',
+              marginBottom: '24px',
+              border: '1px solid var(--border)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '12px',
+            }}>
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--fg-muted)', display: 'block' }}>Jenis Rekening</span>
+                <strong style={{ fontSize: '14px', color: 'var(--accent)' }}>{pendingApplication.account_type}</strong>
+              </div>
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--fg-muted)', display: 'block' }}>Rencana Setoran Awal</span>
+                <strong style={{ fontSize: '14px' }}>{formatRupiah(pendingApplication.initial_deposit)}</strong>
+              </div>
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--fg-muted)', display: 'block' }}>Fasilitas Tabungan</span>
+                <strong style={{ fontSize: '14px', color: '#65d69a' }}>Kotak Fisik NFC</strong>
+              </div>
+            </div>
+
+            <div style={{
+              padding: '14px 18px',
+              borderRadius: '12px',
+              background: 'rgba(23, 107, 85, 0.15)',
+              border: '1px solid rgba(23, 107, 85, 0.3)',
+              marginBottom: '24px',
+              fontSize: '13px',
+              lineHeight: '1.5',
+            }}>
+              💡 <strong>Alur Resmi:</strong> Admin menyetujui pengajuan melalui konsol admin, kemudian nomor rekening resmi diterbitkan dan kotak tabungan fisik NFC dikirimkan ke alamat Anda.
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <Link to="/accounts/apply" className="btn btn-secondary">
+                Lihat Formulir Pengajuan
+              </Link>
+              <button
+                onClick={() => handleQuickApprove(pendingApplication.id)}
+                disabled={approving}
+                className="btn btn-primary"
+                style={{ background: 'linear-gradient(135deg, #176b55, #10b981)' }}
+              >
+                {approving ? 'Memproses Persetujuan...' : '⚡ [Mode Uji Coba] Setujui & Terbitkan Rekening Sekarang'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // KASUS B: Belum pernah mengajukan sama sekali
     return (
       <div style={{ maxWidth: '720px', margin: '40px auto', padding: '0 20px' }}>
         <div className="card" style={{ textAlign: 'center', padding: '40px 24px' }}>

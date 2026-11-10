@@ -13,6 +13,7 @@ export default function AccountApplicationPage() {
   const [initialDeposit, setInitialDeposit] = useState(50000)
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [approvingId, setApprovingId] = useState(null)
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
@@ -61,6 +62,21 @@ export default function AccountApplicationPage() {
       setSuccessMsg('Pengajuan pembukaan rekening berhasil dikirim! Admin akan segera memeriksa berkas Anda.')
       setNotes('')
       loadApplications()
+    }
+  }
+
+  const handleQuickApprove = async (appId) => {
+    setApprovingId(appId)
+    setErrorMsg('')
+    const { data, error } = await supabase.rpc('approve_account_application', {
+      p_application_id: appId,
+      p_admin_notes: 'Persetujuan Otomatis (Mode Uji Coba)',
+    })
+    setApprovingId(null)
+    if (error || !data?.ok) {
+      setErrorMsg('Gagal menyetujui: ' + (error?.message || data?.error || 'Terjadi kesalahan'))
+    } else {
+      navigate('/dashboard')
     }
   }
 
@@ -176,6 +192,21 @@ export default function AccountApplicationPage() {
                   {app.admin_notes && (
                     <div style={{ marginTop: '6px', padding: '8px 12px', background: 'rgba(231, 76, 60, 0.1)', borderRadius: '8px', color: '#ff8a80' }}>
                       Catatan Admin: {app.admin_notes}
+                    </div>
+                  )}
+                  {app.status === 'PENDING' && (
+                    <div style={{ marginTop: '10px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--fg-muted)' }}>
+                        ⏳ Menunggu persetujuan Admin bank.
+                      </span>
+                      <button
+                        onClick={() => handleQuickApprove(app.id)}
+                        disabled={approvingId === app.id}
+                        className="btn btn-sm btn-primary"
+                        style={{ fontSize: '11px', padding: '6px 12px' }}
+                      >
+                        {approvingId === app.id ? 'Memproses...' : '⚡ [Mode Uji Coba] Setujui Sekarang'}
+                      </button>
                     </div>
                   )}
                   {app.status === 'APPROVED' && (
