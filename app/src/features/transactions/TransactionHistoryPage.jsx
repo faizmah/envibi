@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../app/providers/AuthProvider'
 import { supabase } from '../../services/supabase/client'
 import { formatRupiah, formatDateTime, formatTransactionStatus } from '../../utils/format'
+import { Card, Button, Badge, SkeletonTable, ResponsiveTable } from '../../components/ui'
 
 export default function TransactionHistoryPage() {
   const { user } = useAuth()
@@ -77,50 +78,144 @@ export default function TransactionHistoryPage() {
     document.body.removeChild(link)
   }
 
-  return (
-    <div style={{ maxWidth: '1000px', margin: '20px auto 60px', padding: '0 20px' }}>
-      <div className="card">
-        <div className="card-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800' }}>Riwayat Mutasi & Transaksi</h2>
-            <p style={{ margin: '4px 0 0', color: 'var(--fg-muted)', fontSize: '12px' }}>
-              Catatan lengkap setiap aliran tabungan setor dan tarik
-            </p>
-          </div>
-          <button onClick={handleExportCSV} className="btn btn-secondary btn-sm" disabled={filtered.length === 0}>
-            📥 Unduh Laporan CSV
-          </button>
-        </div>
+  const columns = [
+    {
+      key: 'transaction_number',
+      label: 'No. Transaksi',
+      render: (v) => (
+        <span style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--text-primary)' }}>
+          {v}
+        </span>
+      ),
+    },
+    {
+      key: 'created_at',
+      label: 'Waktu',
+      render: (v) => (
+        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+          {formatDateTime(v)}
+        </span>
+      ),
+    },
+    {
+      key: 'transaction_type',
+      label: 'Jenis',
+      render: (v) => (
+        <Badge variant={v === 'DEPOSIT' ? 'success' : 'danger'}>
+          {v === 'DEPOSIT' ? '📥 Setoran' : '📤 Penarikan'}
+        </Badge>
+      ),
+    },
+    {
+      key: 'amount',
+      label: 'Nominal',
+      render: (v, row) => (
+        <span style={{
+          fontWeight: '800',
+          color: row.transaction_type === 'DEPOSIT' ? '#10b981' : '#f87171',
+        }}>
+          {row.transaction_type === 'DEPOSIT' ? '+' : '-'}{formatRupiah(v)}
+        </span>
+      ),
+    },
+    {
+      key: 'description',
+      label: 'Keterangan',
+      render: (v) => (
+        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+          {v || 'Transaksi Mandiri'}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (v) => (
+        <Badge variant={v === 'COMPLETED' ? 'success' : v === 'PENDING' ? 'warning' : 'neutral'}>
+          {formatTransactionStatus(v)}
+        </Badge>
+      ),
+    },
+  ]
 
-        {/* Filters */}
+  return (
+    <div style={{ maxWidth: '1100px', margin: '10px auto 40px' }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px',
+        marginBottom: '20px',
+      }}>
+        <div>
+          <h1 style={{ fontSize: 'clamp(20px, 3vw, 24px)', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+            Riwayat Mutasi & Transaksi
+          </h1>
+          <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '12.5px' }}>
+            Catatan lengkap seluruh aliran dana masuk (setor) dan keluar (tarik) pada rekening tabungan Anda
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportCSV}
+          disabled={filtered.length === 0}
+        >
+          📥 Unduh Laporan (.CSV)
+        </Button>
+      </div>
+
+      {/* Filter Section */}
+      <Card variant="glass" style={{ padding: '16px', marginBottom: '20px' }}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-          gap: '10px',
-          marginBottom: '20px',
-          background: 'rgba(255,255,255,0.02)',
-          padding: '14px',
-          borderRadius: '12px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: '12px',
         }}>
           <div>
-            <label className="form-label">Cari Nomor / Keterangan</label>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px' }}>
+              Cari No. / Keterangan
+            </label>
             <input
               type="text"
-              className="form-field"
-              placeholder="Cari transaksi..."
+              placeholder="Ketik untuk mencari..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ margin: 0 }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '12.5px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
             />
           </div>
 
           <div>
-            <label className="form-label">Jenis Transaksi</label>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px' }}>
+              Jenis Transaksi
+            </label>
             <select
-              className="form-field"
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              style={{ margin: 0 }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '12.5px',
+                outline: 'none',
+                boxSizing: 'border-box',
+                cursor: 'pointer',
+              }}
             >
               <option value="ALL">Semua Jenis</option>
               <option value="DEPOSIT">Setoran (Masuk)</option>
@@ -129,83 +224,92 @@ export default function TransactionHistoryPage() {
           </div>
 
           <div>
-            <label className="form-label">Dari Tanggal</label>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px' }}>
+              Dari Tanggal
+            </label>
             <input
               type="date"
-              className="form-field"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              style={{ margin: 0 }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '12.5px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
             />
           </div>
 
           <div>
-            <label className="form-label">Sampai Tanggal</label>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px' }}>
+              Sampai Tanggal
+            </label>
             <input
               type="date"
-              className="form-field"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              style={{ margin: 0 }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '12.5px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
             />
           </div>
         </div>
 
-        {/* Transactions Table */}
-        {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center' }}>
-            <div className="loading-spinner" style={{ margin: '0 auto 12px' }} />
-            <p style={{ color: 'var(--fg-muted)' }}>Memuat riwayat...</p>
-          </div>
-        ) : filtered.length > 0 ? (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--fg-muted)' }}>
-                  <th style={{ padding: '10px 12px' }}>No. Transaksi</th>
-                  <th style={{ padding: '10px 12px' }}>Waktu</th>
-                  <th style={{ padding: '10px 12px' }}>Jenis</th>
-                  <th style={{ padding: '10px 12px' }}>Nominal</th>
-                  <th style={{ padding: '10px 12px' }}>Keterangan</th>
-                  <th style={{ padding: '10px 12px' }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((tx) => (
-                  <tr key={tx.id} style={{ borderBottom: '1px solid rgba(220, 230, 240, 0.05)' }}>
-                    <td style={{ padding: '12px', fontWeight: '700' }}>{tx.transaction_number}</td>
-                    <td style={{ padding: '12px', color: 'var(--fg-muted)' }}>{formatDateTime(tx.created_at)}</td>
-                    <td style={{ padding: '12px' }}>
-                      <span style={{
-                        padding: '3px 8px',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        fontWeight: '800',
-                        background: tx.transaction_type === 'DEPOSIT' ? 'rgba(46, 204, 113, 0.15)' : 'rgba(231, 76, 60, 0.15)',
-                        color: tx.transaction_type === 'DEPOSIT' ? '#65d69a' : '#ff8a80',
-                      }}>
-                        {tx.transaction_type === 'DEPOSIT' ? 'Setoran' : 'Penarikan'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px', fontWeight: '800' }}>{formatRupiah(tx.amount)}</td>
-                    <td style={{ padding: '12px', color: 'var(--fg-muted)' }}>{tx.description || '-'}</td>
-                    <td style={{ padding: '12px' }}>
-                      <span className={`status ${tx.status === 'COMPLETED' ? 'good' : 'wait'}`}>
-                        {formatTransactionStatus(tx.status)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--fg-muted)' }}>
-            Tidak ada transaksi yang cocok dengan kriteria pencarian.
+        {(searchQuery || filterType !== 'ALL' || startDate || endDate) && (
+          <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+              Menampilkan {filtered.length} transaksi terfilter
+            </span>
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setFilterType('ALL')
+                setStartDate('')
+                setEndDate('')
+              }}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                color: '#d4a853',
+                fontSize: '11px',
+                fontWeight: '700',
+                cursor: 'pointer',
+              }}
+            >
+              Reset Filter ✕
+            </button>
           </div>
         )}
-      </div>
+      </Card>
+
+      {/* Transactions Table */}
+      <Card variant="glass" style={{ padding: '0', overflow: 'hidden' }}>
+        {loading ? (
+          <div style={{ padding: '20px' }}>
+            <SkeletonTable rows={5} columns={6} />
+          </div>
+        ) : (
+          <ResponsiveTable
+            columns={columns}
+            data={filtered}
+            keyField="id"
+            emptyMessage="Belum ada transaksi yang sesuai dengan filter pencarian Anda."
+          />
+        )}
+      </Card>
     </div>
   )
 }
-

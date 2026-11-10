@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../services/supabase/client'
-import { formatDateTime } from '../../utils/format'
+import { formatDateTime, formatRupiah } from '../../utils/format'
+import { Card, Button, Badge, SkeletonTable, ResponsiveTable } from '../../components/ui'
 
 export default function AdminMembersPage() {
   const [members, setMembers] = useState([])
@@ -28,7 +29,6 @@ export default function AdminMembersPage() {
 
   const handleSelectMember = async (m) => {
     setSelectedMember(m)
-    // Ambil rekening & kotak milik member ini
     const [accRes, boxRes] = await Promise.all([
       supabase.from('accounts').select('*').eq('user_id', m.id),
       supabase.from('savings_boxes').select('*').eq('user_id', m.id),
@@ -63,173 +63,271 @@ export default function AdminMembersPage() {
     )
   })
 
+  const columns = [
+    {
+      key: 'full_name',
+      label: 'Nama Nasabah',
+      render: (v, row) => (
+        <div>
+          <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{v || 'Tanpa Nama'}</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{row.email}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'identity_number',
+      label: 'NIK / KTP',
+      render: (v) => (
+        <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-secondary)' }}>
+          {v || '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'verification_status',
+      label: 'Verifikasi',
+      render: (v) => {
+        const variant = v === 'VERIFIED' ? 'success' : v === 'PENDING' ? 'warning' : 'danger'
+        return <Badge variant={variant}>{v || 'UNVERIFIED'}</Badge>
+      },
+    },
+    {
+      key: 'created_at',
+      label: 'Terdaftar',
+      render: (v) => (
+        <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+          {formatDateTime(v)}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Aksi',
+      render: (_, row) => (
+        <Button
+          variant={selectedMember?.id === row.id ? 'primary' : 'outline'}
+          size="sm"
+          onClick={() => handleSelectMember(row)}
+        >
+          {selectedMember?.id === row.id ? 'Terpilih' : 'Detail'}
+        </Button>
+      ),
+    },
+  ]
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px',
+        flexWrap: 'wrap',
+        gap: '12px',
+      }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '800' }}>Manajemen Data Member</h2>
-          <p style={{ margin: '4px 0 0', color: 'var(--fg-muted)', fontSize: '12px' }}>
-            Daftar nasabah, verifikasi identitas, dan status kepemilikan kotak tabungan fisik
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span style={{ fontSize: '11px', fontWeight: '800', color: '#c4b5fd', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              DATABASE NASABAH
+            </span>
+            <Badge variant="neutral">{members.length} Member Terdaftar</Badge>
+          </div>
+          <h1 style={{ fontSize: 'clamp(20px, 3vw, 24px)', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+            Manajemen Data Member
+          </h1>
+          <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '12.5px' }}>
+            Kelola data KYC identitas, verifikasi status nasabah, dan kepemilikan kotak tabungan fisik
           </p>
         </div>
-        <input
-          type="text"
-          className="form-field"
-          placeholder="Cari nama, email, NIK..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ maxWidth: '280px', margin: 0 }}
-        />
+
+        <div style={{ position: 'relative', minWidth: '240px' }}>
+          <input
+            type="text"
+            placeholder="Cari nama, email, NIK..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 12px 8px 32px',
+              borderRadius: '8px',
+              border: '1px solid rgba(139,92,246,0.3)',
+              background: 'rgba(139,92,246,0.06)',
+              color: 'var(--text-primary)',
+              fontSize: '12.5px',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px' }}>
+            🔍
+          </span>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: selectedMember ? '1fr 380px' : '1fr', gap: '20px' }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: selectedMember ? 'minmax(0, 1fr) 360px' : '1fr',
+        gap: '20px',
+        alignItems: 'start',
+      }}>
         {/* Table of Members */}
-        <div className="card">
+        <Card variant="glass" style={{ padding: '0', overflow: 'hidden' }}>
           {loading ? (
-            <div style={{ padding: '40px', textAlign: 'center' }}>
-              <div className="loading-spinner" style={{ margin: '0 auto 12px' }} />
-              <p style={{ color: 'var(--fg-muted)' }}>Memuat data member...</p>
-            </div>
-          ) : filteredMembers.length > 0 ? (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--fg-muted)' }}>
-                    <th style={{ padding: '8px 12px' }}>Nama Member</th>
-                    <th style={{ padding: '8px 12px' }}>Email</th>
-                    <th style={{ padding: '8px 12px' }}>Identitas (KTP)</th>
-                    <th style={{ padding: '8px 12px' }}>Verifikasi</th>
-                    <th style={{ padding: '8px 12px' }}>Terdaftar</th>
-                    <th style={{ padding: '8px 12px' }}>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredMembers.map((m) => (
-                    <tr
-                      key={m.id}
-                      style={{
-                        borderBottom: '1px solid rgba(220, 230, 240, 0.05)',
-                        background: selectedMember?.id === m.id ? 'rgba(195, 154, 88, 0.1)' : 'transparent',
-                      }}
-                    >
-                      <td style={{ padding: '10px 12px', fontWeight: '700' }}>{m.full_name || 'Tanpa Nama'}</td>
-                      <td style={{ padding: '10px 12px', color: 'var(--fg-muted)' }}>{m.email}</td>
-                      <td style={{ padding: '10px 12px' }}>{m.identity_number || '-'}</td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <span className={`status ${
-                          m.verification_status === 'VERIFIED' ? 'good' :
-                          m.verification_status === 'PENDING' ? 'wait' : 'bad'
-                        }`}>
-                          {m.verification_status}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px 12px', color: 'var(--fg-muted)' }}>{formatDateTime(m.created_at)}</td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => handleSelectMember(m)}
-                        >
-                          Rincian
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ padding: '20px' }}>
+              <SkeletonTable rows={6} columns={5} />
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '30px', color: 'var(--fg-muted)' }}>
-              Tidak ada data member yang ditemukan.
-            </div>
+            <ResponsiveTable
+              columns={columns}
+              data={filteredMembers}
+              keyField="id"
+              emptyMessage="Tidak ada nasabah yang cocok dengan pencarian."
+            />
           )}
-        </div>
+        </Card>
 
         {/* Selected Member Detail Sidebar */}
         {selectedMember && (
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <h3 className="card-title">Rincian Member</h3>
+          <Card variant="elevated" style={{ padding: '20px', border: '1px solid rgba(139,92,246,0.35)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#c4b5fd' }}>
+                Profil Lengkap Nasabah
+              </h3>
               <button
                 type="button"
-                className="btn btn-sm btn-secondary"
                 onClick={() => setSelectedMember(null)}
+                style={{
+                  border: 'none',
+                  background: 'rgba(240,246,252,0.08)',
+                  color: 'var(--text-muted)',
+                  borderRadius: '6px',
+                  width: '26px',
+                  height: '26px',
+                  cursor: 'pointer',
+                  display: 'grid',
+                  placeItems: 'center',
+                }}
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '12.5px' }}>
               <div>
-                <span style={{ color: 'var(--fg-muted)', display: 'block' }}>Nama Lengkap:</span>
-                <b style={{ fontSize: '14px' }}>{selectedMember.full_name || '-'}</b>
+                <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block' }}>Nama Lengkap</span>
+                <b style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{selectedMember.full_name || '-'}</b>
               </div>
+
               <div>
-                <span style={{ color: 'var(--fg-muted)', display: 'block' }}>Email:</span>
-                <span>{selectedMember.email}</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block' }}>Alamat Email</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{selectedMember.email}</span>
               </div>
+
               <div>
-                <span style={{ color: 'var(--fg-muted)', display: 'block' }}>Nomor Telepon:</span>
-                <span>{selectedMember.phone || '-'}</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block' }}>Nomor Telepon</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{selectedMember.phone || '-'}</span>
               </div>
+
               <div>
-                <span style={{ color: 'var(--fg-muted)', display: 'block' }}>Alamat Rumah:</span>
-                <p style={{ margin: 0, lineHeight: '1.4' }}>{selectedMember.address || '-'}</p>
+                <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block' }}>Alamat Lengkap</span>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                  {selectedMember.address || '-'}
+                </p>
               </div>
 
               {/* Status Verifikasi Actions */}
-              <div style={{ marginTop: '10px', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
-                <span style={{ color: 'var(--fg-muted)', display: 'block', marginBottom: '6px' }}>
-                  Ubah Status Verifikasi:
+              <div style={{ marginTop: '8px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block', marginBottom: '8px' }}>
+                  Keputusan Verifikasi Identitas (KYC):
                 </span>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-success"
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Button
+                    variant="success"
+                    size="sm"
                     disabled={updating || selectedMember.verification_status === 'VERIFIED'}
                     onClick={() => handleUpdateVerification('VERIFIED')}
+                    style={{ flex: 1 }}
                   >
-                    Verifikasi (Sah)
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-danger"
+                    ✓ Verifikasi
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
                     disabled={updating || selectedMember.verification_status === 'REJECTED'}
                     onClick={() => handleUpdateVerification('REJECTED')}
+                    style={{ flex: 1 }}
                   >
-                    Tolak
-                  </button>
+                    ✕ Tolak
+                  </Button>
                 </div>
               </div>
 
               {/* Rekening Terdaftar */}
-              <div style={{ marginTop: '14px', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
-                <span style={{ fontWeight: '800', display: 'block', marginBottom: '6px' }}>
+              <div style={{ marginTop: '10px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
+                <span style={{ fontWeight: '800', color: '#d4a853', display: 'block', marginBottom: '6px' }}>
                   Rekening Dimiliki ({memberAccounts.length}):
                 </span>
-                {memberAccounts.map((a) => (
-                  <div key={a.id} style={{ padding: '6px 0', borderBottom: '1px dashed var(--border)' }}>
-                    <b>{a.account_number}</b> ({a.account_type}) · Saldo: Rp {Number(a.book_balance).toLocaleString('id-ID')}
-                  </div>
-                ))}
+                {memberAccounts.length > 0 ? (
+                  memberAccounts.map((a) => (
+                    <div
+                      key={a.id}
+                      style={{
+                        padding: '8px 10px',
+                        background: 'rgba(240,246,252,0.03)',
+                        borderRadius: '8px',
+                        marginBottom: '6px',
+                        border: '1px solid var(--border)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <b style={{ color: 'var(--text-primary)' }}>{a.account_number}</b>
+                        <Badge variant="success">{a.status}</Badge>
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#10b981', marginTop: '2px', fontWeight: '700' }}>
+                        {formatRupiah(a.book_balance)}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Belum membuka rekening</span>
+                )}
               </div>
 
               {/* Kotak Fisik Terdaftar */}
-              <div style={{ marginTop: '10px' }}>
-                <span style={{ fontWeight: '800', display: 'block', marginBottom: '6px' }}>
-                  Kotak Fisik Dimiliki ({memberBoxes.length}):
+              <div style={{ marginTop: '6px' }}>
+                <span style={{ fontWeight: '800', color: '#c4b5fd', display: 'block', marginBottom: '6px' }}>
+                  Kotak Tabungan Fisik ({memberBoxes.length}):
                 </span>
-                {memberBoxes.map((b) => (
-                  <div key={b.id} style={{ padding: '6px 0' }}>
-                    <b>{b.box_code}</b> · Status: <span className="status good">{b.status}</span>
-                  </div>
-                ))}
+                {memberBoxes.length > 0 ? (
+                  memberBoxes.map((b) => (
+                    <div
+                      key={b.id}
+                      style={{
+                        padding: '8px 10px',
+                        background: 'rgba(139,92,246,0.06)',
+                        borderRadius: '8px',
+                        marginBottom: '6px',
+                        border: '1px solid rgba(139,92,246,0.2)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <b style={{ color: '#c4b5fd' }}>{b.box_code}</b>
+                        <Badge variant="warning">{b.status}</Badge>
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        Tag NFC: {b.nfc_tag_id || 'Belum di-bind'}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Belum memiliki kotak tabungan</span>
+                )}
               </div>
             </div>
-          </div>
+          </Card>
         )}
       </div>
     </div>
   )
 }
-

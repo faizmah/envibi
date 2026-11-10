@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../../services/supabase/client'
 import { subscribeToAllBoxes } from '../../services/realtime/realtimeService'
 import { formatBoxStatus, formatDateTime } from '../../utils/format'
+import { Card, Button, Badge, Modal, SkeletonTable, ResponsiveTable } from '../../components/ui'
 
 export default function AdminBoxesPage() {
   const [boxes, setBoxes] = useState([])
@@ -29,19 +30,33 @@ export default function AdminBoxesPage() {
   const loadData = async () => {
     setLoading(true)
 
-    // 1. Ambil kotak dengan relasi profile & account
-    const { data: bList } = await supabase
+    // 1. Ambil kotak dengan accounts & shipments (tanpa direct profiles PostgREST join untuk mencegah PGRST200)
+    const { data: bList, error: bErr } = await supabase
       .from('savings_boxes')
-      .select('*, profiles:user_id(full_name, email, address), accounts:account_id(account_number), shipments(*)')
+      .select('*, accounts:account_id(account_number), shipments(*)')
       .order('created_at', { ascending: false })
 
-    if (bList) setBoxes(bList)
+    if (bErr) {
+      console.error('Error fetching savings_boxes:', bErr)
+    }
 
     // 2. Ambil member & rekening
     const [mRes, aRes] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, email'),
+      supabase.from('profiles').select('id, full_name, email, address'),
       supabase.from('accounts').select('id, account_number, user_id').eq('status', 'ACTIVE'),
     ])
+
+    const profMap = new Map((mRes.data || []).map((p) => [p.id, p]))
+
+    if (bList) {
+      const enriched = bList.map((b) => ({
+        ...b,
+        profiles: profMap.get(b.user_id) || null,
+      }))
+      setBoxes(enriched)
+    } else {
+      setBoxes([])
+    }
 
     if (mRes.data) setMembers(mRes.data)
     if (aRes.data) setAccounts(aRes.data)
@@ -67,16 +82,19 @@ export default function AdminBoxesPage() {
     setErrorMsg('')
     setMessage('')
 
-    // Generate box code via RPC or DB function
     const boxCode = 'BOX-' + Math.floor(100000 + Math.random() * 900000)
 
-    const { data, error } = await supabase.from('savings_boxes').insert({
-      box_code: boxCode,
-      user_id: selectedUserId,
-      account_id: selectedAccountId,
-      status: 'NFC_PENDING',
-      prepared_at: new Date().toISOString(),
-    }).select().single()
+    const { data, error } = await supabase
+      .from('savings_boxes')
+      .insert({
+        box_code: boxCode,
+        user_id: selectedUserId,
+        account_id: selectedAccountId,
+        status: 'NFC_PENDING',
+        prepared_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
 
     setCreating(false)
 
@@ -97,7 +115,6 @@ export default function AdminBoxesPage() {
     setShippingUpdating(true)
     setErrorMsg('')
 
-    // Update or insert shipment
     const { error: shipErr } = await supabase.from('shipments').upsert({
       box_id: shippingBox.id,
       courier,
@@ -107,7 +124,6 @@ export default function AdminBoxesPage() {
       notes: shippingNotes.trim() || null,
     })
 
-    // Update status box to SHIPPED
     const { error: boxErr } = await supabase
       .from('savings_boxes')
       .update({
@@ -119,9 +135,8 @@ export default function AdminBoxesPage() {
     setShippingUpdating(false)
 
     if (shipErr || boxErr) {
-      setErrorMsg('Gagal memperbarui status pengiriman.')
+      setErrorMsg('Gagal memperbarui status pengiriman: ' + (shipErr?.message || boxErr?.message))
     } else {
-      // Send notification to member
       await supabase.from('notifications').insert({
         user_id: shippingBox.user_id,
         type: 'BOX_SHIPPED',
@@ -138,249 +153,376 @@ export default function AdminBoxesPage() {
 
   const memberAccounts = accounts.filter((a) => a.user_id === selectedUserId)
 
+  const columns = [
+    {
+      key: 'box_code',
+      label: 'Kode Kotak',
+      render: (v) => (
+        <span style={{ fontFamily: 'monospace', fontWeight: '800', color: '#c4b5fd' }}>
+          {v}
+        </span>
+      ),
+    },
+    {
+      key: 'profiles',
+      label: 'Pemilik & Alamat',
+      render: (v) => (
+        <div>
+          <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{v?.full_name || 'Nasabah'}</div>
+          <div style={{
+            fontSize: '11px',
+            color: 'var(--text-muted)',
+            maxWidth: '220px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {v?.address || 'Alamat belum diatur'}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'accounts',
+      label: 'Rekening',
+      render: (v) => (
+        <span style={{ fontFamily: 'monospace', color: '#d4a853', fontWeight: '700' }}>
+          {v?.account_number || '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status Kotak',
+      render: (v) => {
+        const variant = v === 'ACTIVE' ? 'success' : v === 'SHIPPED' ? 'info' : 'warning'
+        return <Badge variant={variant}>{formatBoxStatus(v)}</Badge>
+      },
+    },
+    {
+      key: 'shipments',
+      label: 'Ekspedisi / Resi',
+      render: (v) => {
+        const ship = v && v.length > 0 ? v[0] : null
+        return ship ? (
+          <div>
+            <b style={{ color: 'var(--text-primary)' }}>{ship.courier}</b>
+            <div style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--text-secondary)' }}>
+              {ship.tracking_number}
+            </div>
+          </div>
+        ) : (
+          <span style={{ color: 'var(--text-muted)', fontSize: '11.5px' }}>Belum Dikirim</span>
+        )
+      },
+    },
+    {
+      key: 'actions',
+      label: 'Aksi',
+      render: (_, row) => {
+        const ship = row.shipments && row.shipments.length > 0 ? row.shipments[0] : null
+        return (
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <Button variant="outline" size="sm" to="/admin/nfc">
+              📡 NFC
+            </Button>
+            {row.status !== 'ACTIVE' && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setShippingBox(row)
+                  setCourier(ship?.courier || 'JNE')
+                  setTrackingNumber(ship?.tracking_number || '')
+                }}
+              >
+                Kirim
+              </Button>
+            )}
+          </div>
+        )
+      },
+    },
+  ]
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px',
+        flexWrap: 'wrap',
+        gap: '12px',
+      }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '800' }}>Manajemen Kotak Tabungan Fisik</h2>
-          <p style={{ margin: '4px 0 0', color: 'var(--fg-muted)', fontSize: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span style={{ fontSize: '11px', fontWeight: '800', color: '#c4b5fd', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              HARDWARE & LOGISTIK
+            </span>
+            <Badge variant="neutral">{boxes.length} Kotak Terdata</Badge>
+          </div>
+          <h1 style={{ fontSize: 'clamp(20px, 3vw, 24px)', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+            Manajemen Kotak Tabungan Fisik
+          </h1>
+          <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '12.5px' }}>
             Pembuatan nomor seri kotak, pengaitan ke rekening nasabah, penulisan NFC, dan resi ekspedisi
           </p>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
+
+        <Button
+          variant="primary"
           onClick={() => {
             setShowCreateModal(true)
             setErrorMsg('')
           }}
         >
-          ＋ Siapkan Kotak Tabungan Baru
-        </button>
+          ＋ Siapkan Kotak Baru
+        </Button>
       </div>
 
       {message && (
-        <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'rgba(46, 204, 113, 0.18)', color: '#65d69a', fontSize: '12px', fontWeight: '700', marginBottom: '20px' }}>
-          ✅ {message}
+        <div style={{
+          padding: '12px 16px',
+          borderRadius: '12px',
+          background: 'rgba(16, 185, 129, 0.12)',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
+          color: '#34d399',
+          fontSize: '12.5px',
+          fontWeight: '700',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}>
+          <span>✅</span>
+          <span>{message}</span>
         </div>
       )}
 
       {/* Table of Boxes */}
-      <div className="card">
+      <Card variant="glass" style={{ padding: '0', overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center' }}>
-            <div className="loading-spinner" style={{ margin: '0 auto 12px' }} />
-            <p style={{ color: 'var(--fg-muted)' }}>Memuat kotak tabungan...</p>
-          </div>
-        ) : boxes.length > 0 ? (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--fg-muted)' }}>
-                  <th style={{ padding: '8px 12px' }}>Kode Kotak</th>
-                  <th style={{ padding: '8px 12px' }}>Pemilik & Alamat</th>
-                  <th style={{ padding: '8px 12px' }}>Rekening Tertaut</th>
-                  <th style={{ padding: '8px 12px' }}>Status Kotak</th>
-                  <th style={{ padding: '8px 12px' }}>Pengiriman / Resi</th>
-                  <th style={{ padding: '8px 12px' }}>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {boxes.map((b) => {
-                  const ship = b.shipments && b.shipments.length > 0 ? b.shipments[0] : null
-                  return (
-                    <tr key={b.id} style={{ borderBottom: '1px solid rgba(220, 230, 240, 0.05)' }}>
-                      <td style={{ padding: '10px 12px', fontWeight: '800' }}>{b.box_code}</td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <b>{b.profiles?.full_name || 'Member'}</b>
-                        <span style={{ display: 'block', fontSize: '11px', color: 'var(--fg-muted)', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {b.profiles?.address || 'Alamat belum diisi'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px 12px' }}>{b.accounts?.account_number || '-'}</td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <span className={`status ${b.status === 'ACTIVE' ? 'good' : b.status === 'SHIPPED' ? 'info' : 'wait'}`}>
-                          {formatBoxStatus(b.status)}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px 12px' }}>
-                        {ship ? (
-                          <div>
-                            <b>{ship.courier}</b>: {ship.tracking_number}
-                          </div>
-                        ) : (
-                          <span style={{ color: 'var(--fg-muted)', fontSize: '11px' }}>Belum Dikirim</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <Link to="/admin/nfc" className="btn btn-sm btn-secondary">
-                            📡 NFC
-                          </Link>
-                          {b.status !== 'ACTIVE' && (
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-primary"
-                              onClick={() => {
-                                setShippingBox(b)
-                                setCourier(ship?.courier || 'JNE')
-                                setTrackingNumber(ship?.tracking_number || '')
-                              }}
-                            >
-                              Kirim
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+          <div style={{ padding: '20px' }}>
+            <SkeletonTable rows={5} columns={6} />
           </div>
         ) : (
-          <p style={{ color: 'var(--fg-muted)', fontSize: '12px', textAlign: 'center', margin: '30px 0' }}>
-            Belum ada kotak tabungan fisik yang dibuat.
-          </p>
+          <ResponsiveTable
+            columns={columns}
+            data={boxes}
+            keyField="id"
+            emptyMessage="Belum ada kotak tabungan fisik yang dibuat."
+          />
         )}
-      </div>
+      </Card>
 
       {/* Modal Siapkan Kotak Baru */}
-      {showCreateModal && (
-        <div className="member-portal-overlay">
-          <div className="card" style={{ maxWidth: '440px', width: '100%', padding: '24px' }}>
-            <h3 style={{ margin: '0 0 10px', fontSize: '16px' }}>Siapkan Kotak Tabungan Baru</h3>
-            <p style={{ color: 'var(--fg-muted)', fontSize: '12px', margin: '0 0 16px' }}>
-              Pilih member dan rekening yang telah disetujui untuk dihubungkan ke kotak fisik.
-            </p>
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Siapkan Kotak Tabungan Baru"
+        maxWidth="460px"
+      >
+        <p style={{ color: 'var(--text-secondary)', fontSize: '12.5px', margin: '0 0 16px', lineHeight: '1.5' }}>
+          Pilih nasabah dan rekening tabungan yang telah aktif untuk dipasangkan ke kotak fisik yang akan dikirimkan.
+        </p>
 
-            {errorMsg && (
-              <div style={{ padding: '8px 12px', background: 'rgba(231, 76, 60, 0.2)', color: '#ff8a80', fontSize: '12px', borderRadius: '8px', marginBottom: '12px' }}>
-                {errorMsg}
-              </div>
-            )}
-
-            <form onSubmit={handleCreateBox} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label className="form-label">Pilih Member</label>
-                <select
-                  className="form-field"
-                  value={selectedUserId}
-                  onChange={(e) => {
-                    setSelectedUserId(e.target.value)
-                    setSelectedAccountId('')
-                  }}
-                  required
-                >
-                  <option value="">Pilih Member...</option>
-                  {members.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.full_name || m.email} ({m.email})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label">Pilih Rekening Terkait</label>
-                <select
-                  className="form-field"
-                  value={selectedAccountId}
-                  onChange={(e) => setSelectedAccountId(e.target.value)}
-                  disabled={!selectedUserId}
-                  required
-                >
-                  <option value="">Pilih Rekening...</option>
-                  {memberAccounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.account_number}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '10px' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowCreateModal(false)}
-                >
-                  Batal
-                </button>
-                <button type="submit" disabled={creating} className="btn btn-primary">
-                  {creating ? 'Membuat...' : 'Buat Kotak & Generate Kode'}
-                </button>
-              </div>
-            </form>
+        {errorMsg && (
+          <div style={{
+            padding: '8px 12px',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            color: '#f87171',
+            fontSize: '12px',
+            borderRadius: '8px',
+            marginBottom: '14px',
+          }}>
+            {errorMsg}
           </div>
-        </div>
-      )}
+        )}
+
+        <form onSubmit={handleCreateBox} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Pilih Nasabah
+            </label>
+            <select
+              value={selectedUserId}
+              onChange={(e) => {
+                setSelectedUserId(e.target.value)
+                setSelectedAccountId('')
+              }}
+              required
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '13px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            >
+              <option value="">Pilih Nasabah...</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.full_name || m.email} ({m.email})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Pilih Rekening Terkait
+            </label>
+            <select
+              value={selectedAccountId}
+              onChange={(e) => setSelectedAccountId(e.target.value)}
+              disabled={!selectedUserId}
+              required
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '13px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            >
+              <option value="">
+                {selectedUserId ? (memberAccounts.length > 0 ? 'Pilih Rekening...' : 'Tidak ada rekening aktif') : 'Pilih nasabah terlebih dahulu'}
+              </option>
+              {memberAccounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.account_number}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
+            <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
+              Batal
+            </Button>
+            <Button type="submit" variant="primary" loading={creating} disabled={creating || !selectedAccountId}>
+              {creating ? 'Membuat...' : 'Buat Kotak & Generate Kode ➔'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Modal Input Resi Pengiriman */}
-      {shippingBox && (
-        <div className="member-portal-overlay">
-          <div className="card" style={{ maxWidth: '440px', width: '100%', padding: '24px' }}>
-            <h3 style={{ margin: '0 0 10px', fontSize: '16px' }}>Input Pengiriman Kotak</h3>
-            <p style={{ color: 'var(--fg-muted)', fontSize: '12px', margin: '0 0 16px' }}>
-              Kotak: <b>{shippingBox.box_code}</b> · Tujuan: <b>{shippingBox.profiles?.full_name}</b>
-            </p>
-
-            <form onSubmit={handleSaveShipment} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label className="form-label">Jasa Kurir / Ekspedisi</label>
-                <select
-                  className="form-field"
-                  value={courier}
-                  onChange={(e) => setCourier(e.target.value)}
-                >
-                  <option value="JNE">JNE Express</option>
-                  <option value="J&T">J&T Express</option>
-                  <option value="SiCepat">SiCepat Ekspres</option>
-                  <option value="Pos Indonesia">Pos Indonesia</option>
-                  <option value="Kurir Bank">Kurir Resmi Narayan Bank</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label">Nomor Resi / AWB</label>
-                <input
-                  type="text"
-                  className="form-field"
-                  placeholder="Masukkan nomor resi..."
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="form-label">Catatan Pengiriman</label>
-                <input
-                  type="text"
-                  className="form-field"
-                  placeholder="Estimasi tiba atau catatan kurir"
-                  value={shippingNotes}
-                  onChange={(e) => setShippingNotes(e.target.value)}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '10px' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShippingBox(null)}
-                >
-                  Batal
-                </button>
-                <button type="submit" disabled={shippingUpdating} className="btn btn-primary">
-                  {shippingUpdating ? 'Menyimpan...' : 'Kirim Kotak & Perbarui Status'}
-                </button>
-              </div>
-            </form>
-          </div>
+      <Modal
+        isOpen={Boolean(shippingBox)}
+        onClose={() => setShippingBox(null)}
+        title="Input Resi Pengiriman Kotak"
+        maxWidth="460px"
+      >
+        <div style={{
+          padding: '10px 12px',
+          background: 'rgba(139,92,246,0.08)',
+          border: '1px solid rgba(139,92,246,0.25)',
+          borderRadius: '8px',
+          marginBottom: '16px',
+          fontSize: '12px',
+          color: 'var(--text-secondary)',
+        }}>
+          Kotak: <b style={{ color: '#c4b5fd' }}>{shippingBox?.box_code}</b> • Penerima: <b style={{ color: 'var(--text-primary)' }}>{shippingBox?.profiles?.full_name}</b>
         </div>
-      )}
+
+        <form onSubmit={handleSaveShipment} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Jasa Kurir / Ekspedisi
+            </label>
+            <select
+              value={courier}
+              onChange={(e) => setCourier(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '13px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            >
+              <option value="JNE">JNE Express</option>
+              <option value="J&T">J&T Express</option>
+              <option value="SiCepat">SiCepat Ekspres</option>
+              <option value="Pos Indonesia">Pos Indonesia</option>
+              <option value="Kurir Bank">Kurir Resmi Narayan Bank</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Nomor Resi / AWB
+            </label>
+            <input
+              type="text"
+              placeholder="Contoh: JNE01928381923"
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              required
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '13px',
+                outline: 'none',
+                boxSizing: 'border-box',
+                fontFamily: 'monospace',
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Catatan Pengiriman (Opsional)
+            </label>
+            <input
+              type="text"
+              placeholder="Estimasi tiba atau catatan khusus kurir"
+              value={shippingNotes}
+              onChange={(e) => setShippingNotes(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '13px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
+            <Button type="button" variant="outline" onClick={() => setShippingBox(null)}>
+              Batal
+            </Button>
+            <Button type="submit" variant="primary" loading={shippingUpdating} disabled={shippingUpdating || !trackingNumber.trim()}>
+              {shippingUpdating ? 'Menyimpan...' : 'Kirim Kotak & Update Status ➔'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }
-

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../services/supabase/client'
 import { subscribeToAllTransactions } from '../../services/realtime/realtimeService'
 import { formatRupiah, formatDateTime, formatTransactionStatus, generateIdempotencyKey } from '../../utils/format'
+import { Card, Button, Badge, Modal, SkeletonTable, ResponsiveTable } from '../../components/ui'
 
 export default function AdminTransactionsPage() {
   const [transactions, setTransactions] = useState([])
@@ -22,19 +23,37 @@ export default function AdminTransactionsPage() {
   const loadData = async () => {
     setLoading(true)
 
+    // 1. Fetch transactions with accounts join (without direct profiles join to avoid PGRST200)
     const [txRes, accRes] = await Promise.all([
       supabase
         .from('transactions')
-        .select('*, profiles:user_id(full_name, email), accounts:account_id(account_number)')
+        .select('*, accounts:account_id(account_number)')
         .order('created_at', { ascending: false })
-        .limit(50),
+        .limit(60),
       supabase
         .from('accounts')
         .select('*, profiles:user_id(full_name)')
         .eq('status', 'ACTIVE'),
     ])
 
-    if (txRes.data) setTransactions(txRes.data)
+    // Manual profile join for transactions
+    if (txRes.data && txRes.data.length > 0) {
+      const userIds = [...new Set(txRes.data.map((t) => t.user_id).filter(Boolean))]
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds)
+
+      const profMap = new Map((profs || []).map((p) => [p.id, p]))
+      const enriched = txRes.data.map((t) => ({
+        ...t,
+        profiles: profMap.get(t.user_id) || null,
+      }))
+      setTransactions(enriched)
+    } else {
+      setTransactions([])
+    }
+
     if (accRes.data) setAccounts(accRes.data)
 
     setLoading(false)
@@ -135,188 +154,305 @@ export default function AdminTransactionsPage() {
     loadData()
   }
 
+  const columns = [
+    {
+      key: 'transaction_number',
+      label: 'No. Transaksi',
+      render: (v) => (
+        <span style={{ fontFamily: 'monospace', fontWeight: '800', color: 'var(--text-primary)' }}>
+          {v}
+        </span>
+      ),
+    },
+    {
+      key: 'profiles',
+      label: 'Nasabah & Rekening',
+      render: (v, row) => (
+        <div>
+          <b style={{ color: 'var(--text-primary)' }}>{v?.full_name || 'Nasabah'}</b>
+          <span style={{ display: 'block', fontSize: '11px', color: '#d4a853', fontFamily: 'monospace' }}>
+            {row.accounts?.account_number || '-'}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'transaction_type',
+      label: 'Tipe',
+      render: (v) => {
+        const isDep = v === 'DEPOSIT'
+        const isCorr = v === 'CORRECTION'
+        const variant = isDep ? 'success' : isCorr ? 'warning' : 'danger'
+        return <Badge variant={variant}>{v}</Badge>
+      },
+    },
+    {
+      key: 'amount',
+      label: 'Nominal',
+      render: (v, row) => (
+        <span style={{
+          fontWeight: '800',
+          color: row.transaction_type === 'DEPOSIT' ? '#10b981' : row.transaction_type === 'CORRECTION' ? '#d4a853' : '#f87171',
+        }}>
+          {formatRupiah(v)}
+        </span>
+      ),
+    },
+    {
+      key: 'source',
+      label: 'Sumber',
+      render: (v) => <Badge variant="neutral">{v || 'MEMBER'}</Badge>,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (v) => {
+        const variant = v === 'COMPLETED' ? 'success' : v === 'PENDING' ? 'warning' : 'neutral'
+        return <Badge variant={variant}>{formatTransactionStatus(v)}</Badge>
+      },
+    },
+    {
+      key: 'created_at',
+      label: 'Waktu',
+      render: (v) => (
+        <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+          {formatDateTime(v)}
+        </span>
+      ),
+    },
+  ]
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px',
+        flexWrap: 'wrap',
+        gap: '12px',
+      }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '800' }}>Manajemen Transaksi & Jurnal</h2>
-          <p style={{ margin: '4px 0 0', color: 'var(--fg-muted)', fontSize: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span style={{ fontSize: '11px', fontWeight: '800', color: '#c4b5fd', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              BUKU BESAR & TRANSAKSI
+            </span>
+            <Badge variant="neutral">{transactions.length} Mutasi Terakhir</Badge>
+          </div>
+          <h1 style={{ fontSize: 'clamp(20px, 3vw, 24px)', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+            Manajemen Transaksi & Jurnal
+          </h1>
+          <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '12.5px' }}>
             Pemantauan transaksi realtime, verifikasi setoran, dan koreksi pembukuan resmi
           </p>
         </div>
-        <button
-          type="button"
-          className="btn btn-secondary"
+
+        <Button
+          variant="outline"
           onClick={() => {
             setShowCorrectionModal(true)
             setErrorMsg('')
           }}
         >
-          ⚖️ Buat Koreksi Saldo Resmi
-        </button>
+          ⚖️ Koreksi Saldo Resmi
+        </Button>
       </div>
 
       {message && (
-        <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'rgba(46, 204, 113, 0.18)', color: '#65d69a', fontSize: '12px', fontWeight: '700', marginBottom: '20px' }}>
-          ✅ {message}
+        <div style={{
+          padding: '12px 16px',
+          borderRadius: '12px',
+          background: 'rgba(16, 185, 129, 0.12)',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
+          color: '#34d399',
+          fontSize: '12.5px',
+          fontWeight: '700',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}>
+          <span>✅</span>
+          <span>{message}</span>
         </div>
       )}
 
-      {/* Transaction Realtime Stream Table */}
-      <div className="card">
-        <h3 className="card-title" style={{ marginBottom: '14px' }}>Aliran Transaksi Realtime</h3>
-
+      {/* Transaction Stream Table */}
+      <Card variant="glass" style={{ padding: '0', overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center' }}>
-            <div className="loading-spinner" style={{ margin: '0 auto 12px' }} />
-            <p style={{ color: 'var(--fg-muted)' }}>Memuat transaksi...</p>
-          </div>
-        ) : transactions.length > 0 ? (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--fg-muted)' }}>
-                  <th style={{ padding: '8px 12px' }}>No. Transaksi</th>
-                  <th style={{ padding: '8px 12px' }}>Member & Rekening</th>
-                  <th style={{ padding: '8px 12px' }}>Tipe</th>
-                  <th style={{ padding: '8px 12px' }}>Nominal</th>
-                  <th style={{ padding: '8px 12px' }}>Sumber</th>
-                  <th style={{ padding: '8px 12px' }}>Status</th>
-                  <th style={{ padding: '8px 12px' }}>Waktu</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.map((t) => (
-                  <tr key={t.id} style={{ borderBottom: '1px solid rgba(220, 230, 240, 0.05)' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: '800' }}>{t.transaction_number}</td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <b>{t.profiles?.full_name || 'Member'}</b>
-                      <span style={{ display: 'block', fontSize: '11px', color: 'var(--fg-muted)' }}>
-                        {t.accounts?.account_number || '-'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <span style={{
-                        padding: '3px 8px',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        fontWeight: '800',
-                        background: t.transaction_type === 'DEPOSIT' ? 'rgba(46, 204, 113, 0.15)' : 'rgba(231, 76, 60, 0.15)',
-                        color: t.transaction_type === 'DEPOSIT' ? '#65d69a' : '#ff8a80',
-                      }}>
-                        {t.transaction_type}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 12px', fontWeight: '800' }}>{formatRupiah(t.amount)}</td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <span className="status info">{t.source}</span>
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <span className={`status ${t.status === 'COMPLETED' ? 'good' : 'wait'}`}>
-                        {formatTransactionStatus(t.status)}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 12px', color: 'var(--fg-muted)' }}>{formatDateTime(t.created_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ padding: '20px' }}>
+            <SkeletonTable rows={6} columns={7} />
           </div>
         ) : (
-          <p style={{ color: 'var(--fg-muted)', fontSize: '12px', textAlign: 'center', margin: '30px 0' }}>
-            Belum ada transaksi tercatat.
-          </p>
+          <ResponsiveTable
+            columns={columns}
+            data={transactions}
+            keyField="id"
+            emptyMessage="Belum ada transaksi mutasi tercatat."
+          />
         )}
-      </div>
+      </Card>
 
       {/* Modal Koreksi Saldo Resmi */}
-      {showCorrectionModal && (
-        <div className="member-portal-overlay">
-          <div className="card" style={{ maxWidth: '460px', width: '100%', padding: '24px' }}>
-            <h3 style={{ margin: '0 0 8px', fontSize: '16px' }}>Formulir Koreksi Saldo Resmi</h3>
-            <p style={{ color: 'var(--fg-muted)', fontSize: '12px', margin: '0 0 16px' }}>
-              Koreksi ini akan membuat catatan mutasi pembukuan dan jejak audit permanen. Alasan wajib dicatat.
-            </p>
+      <Modal
+        isOpen={showCorrectionModal}
+        onClose={() => setShowCorrectionModal(false)}
+        title="Formulir Koreksi Saldo Resmi"
+        maxWidth="460px"
+      >
+        <p style={{ color: 'var(--text-secondary)', fontSize: '12.5px', margin: '0 0 16px', lineHeight: '1.5' }}>
+          Tindakan ini akan membuat transaksi tipe <b style={{ color: '#d4a853' }}>CORRECTION</b> dan catatan audit trail permanen yang terhubung ke pembukuan buku besar.
+        </p>
 
-            {errorMsg && (
-              <div style={{ padding: '8px 12px', background: 'rgba(231, 76, 60, 0.2)', color: '#ff8a80', fontSize: '12px', borderRadius: '8px', marginBottom: '12px' }}>
-                {errorMsg}
-              </div>
-            )}
-
-            <form onSubmit={handleExecuteCorrection} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label className="form-label">Pilih Rekening Tujuan</label>
-                <select
-                  className="form-field"
-                  value={selectedAccountId}
-                  onChange={(e) => setSelectedAccountId(e.target.value)}
-                  required
-                >
-                  <option value="">Pilih Rekening...</option>
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.account_number} · {a.profiles?.full_name} ({formatRupiah(a.book_balance)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label">Jenis Penyesuaian Saldo</label>
-                <select
-                  className="form-field"
-                  value={correctionType}
-                  onChange={(e) => setCorrectionType(e.target.value)}
-                >
-                  <option value="CREDIT">Kredit (+) Tambah Saldo Pembukuan</option>
-                  <option value="DEBIT">Debit (-) Kurangi Saldo Pembukuan</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label">Nominal Koreksi (Rp)</label>
-                <input
-                  type="number"
-                  className="form-field"
-                  placeholder="Contoh: 100000"
-                  value={correctionAmount}
-                  onChange={(e) => setCorrectionAmount(e.target.value)}
-                  min="1"
-                  step="1000"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="form-label">Alasan Koreksi (Wajib Diisi Secara Resmi)</label>
-                <textarea
-                  className="form-field"
-                  rows="3"
-                  placeholder="Contoh: Penyesuaian selisih setoran member tanggal 10 Nov sesuai bukti transfer"
-                  value={correctionReason}
-                  onChange={(e) => setCorrectionReason(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '10px' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowCorrectionModal(false)}
-                >
-                  Batal
-                </button>
-                <button type="submit" disabled={processing} className="btn btn-primary">
-                  {processing ? 'Memproses...' : 'Simpan Koreksi & Mutasi'}
-                </button>
-              </div>
-            </form>
+        {errorMsg && (
+          <div style={{
+            padding: '8px 12px',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            color: '#f87171',
+            fontSize: '12px',
+            borderRadius: '8px',
+            marginBottom: '14px',
+          }}>
+            {errorMsg}
           </div>
-        </div>
-      )}
+        )}
+
+        <form onSubmit={handleExecuteCorrection} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Pilih Rekening Tujuan
+            </label>
+            <select
+              value={selectedAccountId}
+              onChange={(e) => setSelectedAccountId(e.target.value)}
+              required
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '13px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            >
+              <option value="">Pilih Rekening...</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.account_number} · {a.profiles?.full_name || 'Member'} (Saldo: {formatRupiah(a.book_balance)})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Aksi Koreksi
+            </label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setCorrectionType('CREDIT')}
+                style={{
+                  flex: 1,
+                  padding: '9px',
+                  borderRadius: '8px',
+                  border: correctionType === 'CREDIT' ? '1px solid #10b981' : '1px solid var(--border)',
+                  background: correctionType === 'CREDIT' ? 'rgba(16,185,129,0.18)' : 'rgba(240,246,252,0.03)',
+                  color: correctionType === 'CREDIT' ? '#34d399' : 'var(--text-secondary)',
+                  fontWeight: '700',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                }}
+              >
+                + Tambah Saldo (Credit)
+              </button>
+              <button
+                type="button"
+                onClick={() => setCorrectionType('DEBIT')}
+                style={{
+                  flex: 1,
+                  padding: '9px',
+                  borderRadius: '8px',
+                  border: correctionType === 'DEBIT' ? '1px solid #ef4444' : '1px solid var(--border)',
+                  background: correctionType === 'DEBIT' ? 'rgba(239,68,68,0.18)' : 'rgba(240,246,252,0.03)',
+                  color: correctionType === 'DEBIT' ? '#f87171' : 'var(--text-secondary)',
+                  fontWeight: '700',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                }}
+              >
+                - Kurangi Saldo (Debit)
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Nominal Penyesuaian (Rp)
+            </label>
+            <input
+              type="number"
+              placeholder="Contoh: 50000"
+              value={correctionAmount}
+              onChange={(e) => setCorrectionAmount(e.target.value)}
+              min="1000"
+              step="1000"
+              required
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '14px',
+                fontWeight: '700',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Alasan Resmi Koreksi (Wajib Audit)
+            </label>
+            <textarea
+              placeholder="Jelaskan alasan selisih fisik atau koreksi administratif..."
+              value={correctionReason}
+              onChange={(e) => setCorrectionReason(e.target.value)}
+              required
+              rows={3}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '12.5px',
+                outline: 'none',
+                boxSizing: 'border-box',
+                resize: 'none',
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '10px' }}>
+            <Button type="button" variant="outline" onClick={() => setShowCorrectionModal(false)}>
+              Batal
+            </Button>
+            <Button type="submit" variant="primary" loading={processing} disabled={processing}>
+              {processing ? 'Mengeksekusi...' : 'Eksekusi Koreksi ➔'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }
-
