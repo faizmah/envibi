@@ -14,7 +14,7 @@ import {
   formatTransactionStatus,
   formatBoxStatus,
 } from '../../utils/format'
-import { Card, Button, Badge, SkeletonGrid, SkeletonTable, ResponsiveTable } from '../../components/ui'
+import { Card, Button, Badge, Skeleton, SkeletonGrid, SkeletonTable, ResponsiveTable } from '../../components/ui'
 
 export default function MemberDashboard() {
   const { user, profile } = useAuth()
