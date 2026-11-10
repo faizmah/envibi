@@ -230,12 +230,15 @@ export default function AdminLayout() {
       </header>
 
       {/* ─── Body: Sidebar + Content ─── */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+      <div style={{ flex: 1, display: 'flex', position: 'relative', minHeight: 'calc(100vh - 56px)' }}>
         {/* Desktop Sidebar */}
         <aside style={{
           width: '240px', flexShrink: 0,
           background: '#161b22',
           borderRight: '1px solid rgba(139,92,246,0.1)',
+          position: 'sticky',
+          top: '56px',
+          height: 'calc(100vh - 56px)',
           overflowY: 'auto',
           display: 'flex', flexDirection: 'column',
         }} className="desktop-sidebar">
@@ -257,14 +260,16 @@ export default function AdminLayout() {
         </aside>
 
         {/* Main Content */}
-        <section style={{
-          flex: 1, overflowY: 'auto',
+        <main style={{
+          flex: 1,
+          minWidth: 0,
+          overflowY: 'visible',
           padding: 'clamp(16px, 2.5vw, 30px)',
+          paddingBottom: '80px',
           background: '#0d1117',
-          minHeight: 'calc(100vh - 56px)',
         }}>
           <Outlet />
-        </section>
+        </main>
       </div>
 
       <style>{`

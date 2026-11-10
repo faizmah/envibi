@@ -64,7 +64,7 @@ export default function AppLayout() {
   const userName = profile?.full_name || user?.email?.split('@')[0] || 'Member'
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', overflowX: 'hidden' }}>
       {/* ─── Mobile Backdrop ─── */}
       {mobileOpen && (
         <div
@@ -402,8 +402,11 @@ export default function AppLayout() {
       <main style={{
         flex: 1,
         paddingTop: isVirtualOffice ? 0 : '72px',
-        height: '100%',
+        paddingBottom: isVirtualOffice ? 0 : '60px',
         minHeight: isVirtualOffice ? '100vh' : 'calc(100vh - 72px)',
+        overflowY: isVirtualOffice ? 'hidden' : 'visible',
+        display: 'flex',
+        flexDirection: 'column',
       }}>
         <Outlet />
       </main>
