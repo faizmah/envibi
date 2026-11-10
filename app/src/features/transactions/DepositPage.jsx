@@ -4,7 +4,7 @@ import { useAuth } from '../../app/providers/AuthProvider'
 import { supabase } from '../../services/supabase/client'
 import { readNFCTag } from '../../services/nfc/nfcService'
 import { formatRupiah, generateIdempotencyKey } from '../../utils/format'
-import { Card, Button, Badge, Skeleton } from '../../components/ui'
+import { Card, Button, Badge, Skeleton, Modal } from '../../components/ui'
 
 const PRESET_AMOUNTS = [20000, 50000, 100000, 200000, 500000, 1000000]
 
@@ -533,17 +533,66 @@ export default function DepositPage() {
           }}>
             Saldo rekening tabungan Anda telah berhasil diperbarui secara atomik. Mutasi dan jejak audit telah tersimpan permanen di database Narayan Virtual Bank.
           </p>
-
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Button variant="primary" to="/dashboard">
-              📊 Buka Dashboard
-            </Button>
-            <Button variant="outline" to="/transactions">
-              📜 Riwayat Transaksi
-            </Button>
-          </div>
         </Card>
       )}
+
+      {/* Modal Sukses Setor */}
+      <Modal
+        isOpen={step === 4}
+        onClose={() => navigate('/dashboard')}
+        title="Setoran Berhasil Dicatat"
+        maxWidth="440px"
+      >
+        <div style={{ textAlign: 'center', padding: '10px 0 6px' }}>
+          <div style={{
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            background: 'rgba(16, 185, 129, 0.15)',
+            border: '2px solid rgba(16, 185, 129, 0.4)',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '30px',
+            margin: '0 auto 16px',
+          }}>
+            🎉
+          </div>
+          <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: '800', color: '#10b981' }}>
+            Setoran Berhasil!
+          </h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: '1.5', margin: '0 0 16px' }}>
+            Uang fisik sejumlah <b style={{ color: '#10b981' }}>{formatRupiah(amount)}</b> telah berhasil dicatatkan ke rekening Anda.
+          </p>
+
+          <div style={{
+            background: 'rgba(240, 246, 252, 0.03)',
+            border: '1px solid var(--border)',
+            borderRadius: '10px',
+            padding: '12px',
+            marginBottom: '20px',
+            textAlign: 'left',
+            fontSize: '12.5px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>No. Transaksi:</span>
+              <b style={{ fontFamily: 'monospace' }}>{pendingTx?.transaction_number}</b>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Status:</span>
+              <Badge variant="success">COMPLETED</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Button variant="outline" to="/transactions" style={{ flex: 1 }}>
+              📜 Riwayat
+            </Button>
+            <Button variant="primary" to="/dashboard" style={{ flex: 1 }}>
+              📊 Dashboard
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

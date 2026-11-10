@@ -106,7 +106,7 @@ export default function RegisterPage() {
       )}
 
       <div className="form-group" style={{ marginBottom: 0 }}>
-        <label className="form-label" htmlFor="regFullName">Nama Lengkap (Sesuai KTP)</label>
+        <label className="form-label" htmlFor="regFullName">Nama Lengkap</label>
         <div className="input-with-icon">
           <span className="input-icon">👤</span>
           <input

@@ -27,8 +27,9 @@ const SIDEBAR_GROUPS = [
   {
     label: 'Layanan',
     items: [
-      { to: '/box/activate', label: 'Kotak NFC',   icon: '📦', desc: 'Aktifkan kotak' },
-      { to: '/reports',      label: 'Laporan',     icon: '📈', desc: 'Rekap keuangan' },
+      { to: '/accounts/apply', label: 'Pesan Tabungan', icon: '📝', desc: 'Buka rekening & kotak' },
+      { to: '/box/activate',   label: 'Kotak NFC',      icon: '📦', desc: 'Aktifkan kotak' },
+      { to: '/reports',        label: 'Laporan',        icon: '📈', desc: 'Rekap keuangan' },
     ],
   },
 ]
@@ -310,6 +311,18 @@ export default function AppLayout() {
 
   // 3D virtual office = no scroll, no sidebar chrome
   const isVirtualOffice = location.pathname === '/'
+
+  // Lock body & html scroll completely when on 3D virtual office
+  useEffect(() => {
+    if (isVirtualOffice) {
+      document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = ''
+        document.documentElement.style.overflow = ''
+      }
+    }
+  }, [isVirtualOffice])
 
   useEffect(() => { setSidebarOpen(false) }, [location.pathname])
 
@@ -769,18 +782,6 @@ export default function AppLayout() {
               }}>Daftar</Link>
             </div>
           )}
-
-          {/* Mobile hamburger (right side) */}
-          <button
-            onClick={() => setSidebarOpen(true)}
-            aria-label="Menu"
-            className="mobile-only"
-            style={{
-              width: '34px', height: '34px', borderRadius: '8px', border: 'none',
-              background: 'rgba(240,246,252,0.08)', color: '#8b949e',
-              cursor: 'pointer', fontSize: '16px', display: 'none', placeItems: 'center',
-            }}
-          >☰</button>
         </div>
       </header>
 

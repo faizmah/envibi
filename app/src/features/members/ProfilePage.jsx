@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../app/providers/AuthProvider'
 import { supabase } from '../../services/supabase/client'
-import { formatDate } from '../../utils/format'
+import { Card, Button, Badge, Modal } from '../../components/ui'
 
 export default function ProfilePage() {
   const { user, profile, role, refreshProfile } = useAuth()
@@ -10,11 +10,9 @@ export default function ProfilePage() {
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const [birthDate, setBirthDate] = useState('')
-  const [identityNumber, setIdentityNumber] = useState('')
-  const [identityType, setIdentityType] = useState('KTP')
 
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState('')
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -23,8 +21,6 @@ export default function ProfilePage() {
       setPhone(profile.phone || '')
       setAddress(profile.address || '')
       setBirthDate(profile.birth_date || '')
-      setIdentityNumber(profile.identity_number || '')
-      setIdentityType(profile.identity_type || 'KTP')
     }
   }, [profile])
 
@@ -32,18 +28,14 @@ export default function ProfilePage() {
     e.preventDefault()
     setSaving(true)
     setError('')
-    setMessage('')
 
     const { error: err } = await supabase
       .from('profiles')
       .update({
-        full_name: fullName,
-        phone,
-        address,
+        full_name: fullName.trim(),
+        phone: phone.trim(),
+        address: address.trim(),
         birth_date: birthDate || null,
-        identity_number: identityNumber,
-        identity_type: identityType,
-        verification_status: profile?.verification_status === 'UNVERIFIED' && identityNumber ? 'PENDING' : profile?.verification_status,
       })
       .eq('id', user.id)
 
@@ -52,133 +44,233 @@ export default function ProfilePage() {
     if (err) {
       setError('Gagal memperbarui profil: ' + err.message)
     } else {
-      setMessage('Profil berhasil diperbarui!')
+      setShowSuccessModal(true)
       refreshProfile()
     }
   }
 
   return (
-    <div style={{ maxWidth: '720px', margin: '20px auto 60px', padding: '0 20px' }}>
-      <div className="card">
-        <div className="card-header">
-          <div>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800' }}>Profil Member</h2>
-            <p style={{ margin: '4px 0 0', color: 'var(--fg-muted)', fontSize: '12px' }}>
-              Kelola data pribadi dan verifikasi identitas resmi Anda
-            </p>
-          </div>
-          <span className={`status ${profile?.verification_status === 'VERIFIED' ? 'good' : profile?.verification_status === 'PENDING' ? 'wait' : 'bad'}`}>
-            {profile?.verification_status || 'UNVERIFIED'}
+    <div style={{ maxWidth: '680px', margin: '16px auto 60px' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+          <span style={{ fontSize: '11px', fontWeight: '800', color: '#d4a853', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            PENGATURAN AKUN
           </span>
+          <Badge variant="success">Akun Aktif</Badge>
         </div>
+        <h1 style={{ fontSize: 'clamp(20px, 3vw, 24px)', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+          Profil Saya
+        </h1>
+        <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '12.5px' }}>
+          Kelola informasi nama, kontak, dan alamat tujuan pengiriman kotak tabungan fisik Anda
+        </p>
+      </div>
 
-        {message && (
-          <div style={{ padding: '10px 14px', borderRadius: '10px', background: 'rgba(46, 204, 113, 0.18)', color: '#65d69a', fontSize: '12px', fontWeight: '700', marginBottom: '16px' }}>
-            ✅ {message}
-          </div>
-        )}
-        {error && (
-          <div style={{ padding: '10px 14px', borderRadius: '10px', background: 'rgba(231, 76, 60, 0.18)', color: '#ff8a80', fontSize: '12px', fontWeight: '700', marginBottom: '16px' }}>
-            ⚠️ {error}
-          </div>
-        )}
+      {error && (
+        <div style={{
+          padding: '12px 16px',
+          borderRadius: '12px',
+          background: 'rgba(239, 68, 68, 0.12)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          color: '#f87171',
+          fontSize: '12.5px',
+          fontWeight: '600',
+          marginBottom: '18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}>
+          <span>⚠️</span>
+          <span>{error}</span>
+        </div>
+      )}
 
-        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <Card variant="glass" style={{ padding: 'clamp(20px, 4vw, 32px)' }}>
+        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label className="form-label">Email Terdaftar</label>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Alamat Email
+            </label>
             <input
               type="email"
-              className="form-field"
               value={user?.email || ''}
               disabled
-              style={{ opacity: 0.6, cursor: 'not-allowed' }}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: '1px solid var(--border)',
+                background: 'rgba(240, 246, 252, 0.04)',
+                color: 'var(--text-muted)',
+                fontSize: '13px',
+                cursor: 'not-allowed',
+                boxSizing: 'border-box',
+              }}
             />
-            <small style={{ color: 'var(--fg-muted)', fontSize: '11px' }}>Email akun tidak dapat diubah</small>
+            <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block', marginTop: '4px' }}>
+              Email akun digunakan sebagai identitas utama login
+            </span>
           </div>
 
           <div>
-            <label className="form-label">Nama Lengkap</label>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Nama Lengkap
+            </label>
             <input
               type="text"
-              className="form-field"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
+              placeholder="Masukkan nama lengkap Anda..."
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '13.5px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
             <div>
-              <label className="form-label">Nomor Telepon / WhatsApp</label>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Nomor Telepon / WhatsApp
+              </label>
               <input
                 type="tel"
-                className="form-field"
-                placeholder="081234567890"
+                placeholder="0812xxxxxxxx"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-elevated, #161b22)',
+                  color: 'var(--text-primary)',
+                  fontSize: '13px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
               />
             </div>
+
             <div>
-              <label className="form-label">Tanggal Lahir</label>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Tanggal Lahir
+              </label>
               <input
                 type="date"
-                className="form-field"
                 value={birthDate}
                 onChange={(e) => setBirthDate(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '12px' }}>
-            <div>
-              <label className="form-label">Jenis Identitas</label>
-              <select
-                className="form-field"
-                value={identityType}
-                onChange={(e) => setIdentityType(e.target.value)}
-              >
-                <option value="KTP">KTP</option>
-                <option value="SIM">SIM</option>
-                <option value="PASPOR">Paspor</option>
-              </select>
-            </div>
-            <div>
-              <label className="form-label">Nomor Identitas (NIK / No. KTP)</label>
-              <input
-                type="text"
-                className="form-field"
-                placeholder="3201xxxxxxxxxxxx"
-                value={identityNumber}
-                onChange={(e) => setIdentityNumber(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-elevated, #161b22)',
+                  color: 'var(--text-primary)',
+                  fontSize: '13px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
               />
             </div>
           </div>
 
           <div>
-            <label className="form-label">Alamat Lengkap Rumah (Tujuan Pengiriman Kotak)</label>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Alamat Lengkap Pengiriman Kotak Fisik
+            </label>
             <textarea
-              className="form-field"
               rows="3"
-              placeholder="Jalan, RT/RW, Kelurahan, Kecamatan, Kota, Kode Pos"
+              placeholder="Nama jalan, RT/RW, nomor rumah, kelurahan, kecamatan, kota, kode pos"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-elevated, #161b22)',
+                color: 'var(--text-primary)',
+                fontSize: '13px',
+                outline: 'none',
+                boxSizing: 'border-box',
+                resize: 'none',
+              }}
             />
-            <small style={{ color: 'var(--fg-muted)', fontSize: '11px' }}>
-              Alamat ini digunakan oleh Admin untuk mengirimkan kotak tabungan fisik NFC ke rumah Anda.
-            </small>
+            <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block', marginTop: '4px' }}>
+              Alamat ini digunakan oleh tim logistik bank untuk mengirimkan kotak tabungan fisik ber-NFC langsung ke rumah Anda.
+            </span>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-            <span style={{ fontSize: '11px', color: 'var(--fg-muted)' }}>
-              Role Akun: <b style={{ color: 'var(--accent2)' }}>{role || 'MEMBER'}</b>
-            </span>
-            <button type="submit" disabled={saving} className="btn btn-primary">
-              {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
-            </button>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: '12px',
+            paddingTop: '16px',
+            borderTop: '1px solid var(--border)',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Hak Akses:</span>
+              <Badge variant={role === 'ADMIN' ? 'warning' : 'neutral'}>
+                {role === 'ADMIN' ? '👑 Admin' : '👤 Nasabah'}
+              </Badge>
+            </div>
+
+            <Button type="submit" variant="primary" loading={saving} disabled={saving}>
+              {saving ? 'Menyimpan...' : 'Simpan Perubahan Profil ➔'}
+            </Button>
           </div>
         </form>
-      </div>
+      </Card>
+
+      {/* Modal Sukses Update Profil */}
+      <Modal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Profil Berhasil Disimpan"
+        maxWidth="420px"
+      >
+        <div style={{ textAlign: 'center', padding: '12px 0 6px' }}>
+          <div style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            background: 'rgba(16, 185, 129, 0.15)',
+            border: '2px solid rgba(16, 185, 129, 0.35)',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '28px',
+            margin: '0 auto 16px',
+          }}>
+            ✓
+          </div>
+          <h3 style={{ margin: '0 0 8px', fontSize: '17px', fontWeight: '800', color: 'var(--text-primary)' }}>
+            Data Profil Diperbarui
+          </h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: '1.5', margin: '0 0 20px' }}>
+            Informasi identitas dan alamat pengiriman Anda telah berhasil disimpan dan disinkronkan ke seluruh sistem Narayan Bank.
+          </p>
+          <Button
+            variant="primary"
+            onClick={() => setShowSuccessModal(false)}
+            style={{ width: '100%', padding: '10px' }}
+          >
+            Mengerti & Tutup
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }
-

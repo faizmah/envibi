@@ -342,8 +342,13 @@ export default function MemberDashboard() {
           <Link to="/withdrawal">
             <Button variant="secondary" icon="📤">Tarik Tabungan</Button>
           </Link>
+          <Link to="/accounts/apply">
+            <Button variant="outline" icon="📝" style={{ borderColor: 'rgba(212, 168, 83, 0.4)', color: '#d4a853' }}>
+              Pesan Tabungan Baru
+            </Button>
+          </Link>
           <Link to="/physical-balance">
-            <Button variant="outline" icon="⚖️">Cocokkan Saldo Fisik</Button>
+            <Button variant="ghost" icon="⚖️">Cocokkan Saldo</Button>
           </Link>
         </div>
       </div>
@@ -425,22 +430,40 @@ export default function MemberDashboard() {
                 <span>{savingsBox.activated_at ? formatDateTime(savingsBox.activated_at) : 'Belum diaktifkan'}</span>
               </div>
 
-              {savingsBox.status !== 'ACTIVE' && (
+              {savingsBox.status !== 'ACTIVE' ? (
                 <Link to="/box/activate" style={{ marginTop: '6px' }}>
                   <Button variant="primary" size="sm" icon="⚡" style={{ width: '100%' }}>
                     Aktivasi Kotak Sekarang (Pindai NFC)
                   </Button>
                 </Link>
+              ) : (
+                <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                  <Link to="/accounts/apply" style={{ flex: 1 }}>
+                    <Button variant="outline" size="sm" icon="📝" style={{ width: '100%' }}>
+                      Pesan Tabungan Baru
+                    </Button>
+                  </Link>
+                  <Link to="/box/activate" style={{ flex: 1 }}>
+                    <Button variant="ghost" size="sm" icon="📦" style={{ width: '100%' }}>
+                      Cek Status Kotak
+                    </Button>
+                  </Link>
+                </div>
               )}
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
               <p style={{ color: 'var(--text-secondary)', fontSize: '12.5px', marginBottom: '16px' }}>
-                Kotak tabungan fisik ber-NFC Anda sedang dalam proses penyiapan oleh Admin Bank.
+                Anda belum memiliki kotak tabungan fisik ber-NFC atau kotak sedang disiapkan oleh Admin.
               </p>
-              <Link to="/box/activate">
-                <Button variant="secondary" size="sm">Lihat Status Pengiriman Kotak</Button>
-              </Link>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Link to="/accounts/apply">
+                  <Button variant="primary" size="sm" icon="📝">Pesan Kotak Tabungan</Button>
+                </Link>
+                <Link to="/box/activate">
+                  <Button variant="secondary" size="sm">Cek Status Pengiriman</Button>
+                </Link>
+              </div>
             </div>
           )}
         </Card>

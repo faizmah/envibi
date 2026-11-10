@@ -487,84 +487,98 @@ export default function VirtualOfficePage() {
   }
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      width: '100vw',
+      height: '100vh',
+      overflow: 'hidden',
+      touchAction: 'none',
+      background: '#17212d',
+    }}>
       {/* 3D Canvas Container */}
-      <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} />
+      <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, touchAction: 'none' }} />
 
       {/* Top HUD */}
-      <div id="hud">
-        <div className="glass brand">
-          <span className="logo">N</span>
-          NARAYAN <small>3D VIRTUAL BRANCH</small>
+      <div id="hud" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: 'calc(100% - 28px)', pointerEvents: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', pointerEvents: 'auto' }}>
+          <div className="glass brand" style={{ borderRadius: '12px' }}>
+            <span className="logo">N</span>
+            NARAYAN <small>KANTOR 3D</small>
+          </div>
+          <div className="glass chip hide-mobile" style={{ borderRadius: '12px' }}>
+            <span>Staf:</span> <b>{activeStaffCount} / 8</b>
+          </div>
+          <div className="glass chip hide-mobile" style={{ borderRadius: '12px' }}>
+            <span>Tugas:</span> <b>{activeTasksCount}</b>
+          </div>
         </div>
-        <div className="glass chip">
-          <span>Staf aktif:</span> <b>{activeStaffCount} / 8</b>
-        </div>
-        <div className="glass chip">
-          <span>Tugas:</span> <b>{activeTasksCount}</b>
-        </div>
-        <div className="glass chip">
-          <span>Bulan simulasi:</span> <b>{simMonth}</b>
+
+        {/* Top Right: Shortcut to Member Portal / Dashboard */}
+        <div style={{ pointerEvents: 'auto' }}>
+          {user ? (
+            <Link
+              to="/dashboard"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 14px', borderRadius: '12px',
+                background: 'linear-gradient(135deg, #d4a853, #b8892e)',
+                color: '#0d1117', fontWeight: '800', fontSize: '12px',
+                textDecoration: 'none', boxShadow: '0 4px 16px rgba(212,168,83,0.35)',
+              }}
+            >
+              <span>📊</span>
+              <span>Portal Member ➔</span>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowMemberModal(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 14px', borderRadius: '12px',
+                background: 'linear-gradient(135deg, #d4a853, #b8892e)',
+                color: '#0d1117', fontWeight: '800', fontSize: '12px',
+                border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(212,168,83,0.35)',
+              }}
+            >
+              <span>🔐</span>
+              <span>Masuk Nasabah</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Floating Launch Member Portal Button */}
-      <button
-        id="memberLaunch"
-        type="button"
-        onClick={() => {
-          if (user) {
-            navigate('/dashboard')
-          } else {
-            setShowMemberModal(true)
-          }
-        }}
-      >
-        <span>🏦</span> {user ? 'Dashboard Member' : 'Member Portal'}
-      </button>
-
       {/* Bottom Dock Navigation */}
-      <nav id="dock" className="glass">
-        {/* Operasional */}
+      <nav id="dock" className="glass" style={{
+        maxWidth: 'calc(100vw - 20px)',
+        overflowX: 'auto',
+        boxSizing: 'border-box',
+      }}>
+        {/* Layanan Bank */}
         <div className={`item ${dockOpenMenu === 'ops' ? 'open' : ''}`}>
           <button
             className="dbtn"
             onClick={() => setDockOpenMenu(dockOpenMenu === 'ops' ? null : 'ops')}
+            style={{ padding: '8px 12px', fontSize: '12px' }}
           >
-            <span className="ic">🏦</span> Operasional
+            <span className="ic">⚡</span> Layanan
           </button>
-          <div className="pop glass">
-            <h5>Permintaan Layanan</h5>
-            <label className="form-label">Jenis Layanan</label>
-            <select
-              className="field"
-              value={serviceType}
-              onChange={(e) => setServiceType(e.target.value)}
-            >
-              <option value="Setoran">Setoran Tabungan</option>
-              <option value="Penarikan">Penarikan Tabungan</option>
-              <option value="Transfer">Transfer Rekening</option>
-              <option value="Pembukaan rekening">Pembukaan Rekening Baru</option>
-              <option value="Konsultasi">Konsultasi Bank</option>
-            </select>
-            <label className="form-label">Nominal (Rp)</label>
-            <input
-              type="number"
-              className="field"
-              value={serviceAmount}
-              onChange={(e) => setServiceAmount(Number(e.target.value))}
-              step="50000"
-            />
-            <div className="row" style={{ marginTop: '8px' }}>
-              <button className="mb pri full" onClick={handleSpawnCustomer}>
-                ＋ Datangkan Nasabah 3D
-              </button>
-            </div>
-            <h5>Akses Cepat</h5>
-            <div className="row">
-              <Link to="/deposit" className="mb full">📥 Lapor Setor Mandiri</Link>
-              <Link to="/withdrawal" className="mb full">📤 Lapor Tarik Mandiri</Link>
-              <Link to="/box/activate" className="mb full">📦 Aktivasi Kotak NFC</Link>
+          <div className="pop glass" style={{ minWidth: '220px' }}>
+            <h5>Aksi Cepat Nasabah</h5>
+            <div className="row" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <Link to="/deposit" className="mb full" style={{ textAlign: 'left', padding: '9px 12px' }}>
+                📥 Setor Tabungan
+              </Link>
+              <Link to="/withdrawal" className="mb full" style={{ textAlign: 'left', padding: '9px 12px' }}>
+                📤 Tarik Tabungan
+              </Link>
+              <Link to="/box/activate" className="mb full" style={{ textAlign: 'left', padding: '9px 12px' }}>
+                📦 Aktivasi Kotak NFC
+              </Link>
+              <Link to="/accounts/apply" className="mb full" style={{ textAlign: 'left', padding: '9px 12px', color: '#d4a853' }}>
+                📝 Pesan Tabungan Baru
+              </Link>
             </div>
           </div>
         </div>
@@ -574,26 +588,28 @@ export default function VirtualOfficePage() {
           <button
             className="dbtn"
             onClick={() => setDockOpenMenu(dockOpenMenu === 'floor' ? null : 'floor')}
+            style={{ padding: '8px 12px', fontSize: '12px' }}
           >
             <span className="ic">🏢</span> Lantai
           </button>
-          <div className="pop glass">
-            <h5>Tampilkan Lantai</h5>
-            <div className="row">
+          <div className="pop glass" style={{ minWidth: '200px' }}>
+            <h5>Pilih Lantai Kantor</h5>
+            <div className="row" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
               {['all', '1', '2', '3'].map((f) => (
                 <button
                   key={f}
                   className={`mb ${activeFloor === f ? 'on' : ''}`}
                   onClick={() => handleFloorSelect(f)}
+                  style={{ padding: '6px 4px', fontSize: '11.5px' }}
                 >
                   {f === 'all' ? 'Semua' : `L${f}`}
                 </button>
               ))}
             </div>
-            <ul className="help" style={{ marginTop: '8px' }}>
+            <ul className="help" style={{ marginTop: '8px', fontSize: '10.5px' }}>
               <li>L1: Customer Lobby & Teller</li>
-              <li>L2: Operasional & Owner Room</li>
-              <li>L3: Digital Banking & Server</li>
+              <li>L2: Operasional & Kantor</li>
+              <li>L3: Server & Digital Banking</li>
             </ul>
           </div>
         </div>
@@ -603,28 +619,28 @@ export default function VirtualOfficePage() {
           <button
             className="dbtn"
             onClick={() => setDockOpenMenu(dockOpenMenu === 'cam' ? null : 'cam')}
+            style={{ padding: '8px 12px', fontSize: '12px' }}
           >
             <span className="ic">🎥</span> Kamera
           </button>
-          <div className="pop glass">
+          <div className="pop glass" style={{ minWidth: '180px' }}>
             <h5>Sudut Pandang</h5>
-            <div className="row">
+            <div className="row" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px' }}>
               <button className="mb" onClick={() => handleCamSelect('top')}>Atas</button>
               <button className="mb" onClick={() => handleCamSelect('front')}>Depan</button>
               <button className="mb" onClick={() => handleCamSelect('left')}>Kiri</button>
-              <button className="mb" onClick={() => handleCamSelect('iso')}>Iso</button>
+              <button className="mb" onClick={() => handleCamSelect('iso')}>Iso 3D</button>
             </div>
-            <h5>Interaksi</h5>
-            <ul className="help">
-              <li>Orbit: Geser kursor / sentuh</li>
-              <li>Zoom: Scroll / Cubit layar</li>
-            </ul>
           </div>
         </div>
 
         {/* Dashboard Link */}
         <div className="item">
-          <Link to="/dashboard" className="dbtn" style={{ textDecoration: 'none' }}>
+          <Link
+            to={user ? "/dashboard" : "/login"}
+            className="dbtn"
+            style={{ textDecoration: 'none', padding: '8px 12px', fontSize: '12px', color: '#d4a853' }}
+          >
             <span className="ic">📊</span> Dashboard
           </Link>
         </div>

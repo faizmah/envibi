@@ -120,22 +120,77 @@
    LIGHT MODE OVERRIDES (.light-mode on <body>)
    ============================================================ */
 body.light-mode {
-  --bg-base:        #f6f8fa;
+  --bg-base:        #f8fafc;
   --bg-surface:     #ffffff;
-  --bg-elevated:    #f0f3f6;
-  --bg-overlay:     rgba(246,248,250,0.90);
-  --text-primary:   #1f2328;
-  --text-secondary: #57606a;
-  --text-muted:     #818b98;
-  --border:         #d0d7de;
-  --border-muted:   #e1e4e8;
-  --fg:             #1f2328;
-  --fg-muted:       #57606a;
-  --bg:             #f6f8fa;
-  --bg2:            #eaeef2;
-  --glass:          rgba(255,255,255,0.80);
-  --glass2:         rgba(255,255,255,0.95);
-  --section-bg:     rgba(0,0,0,0.04);
+  --bg-elevated:    #ffffff;
+  --bg-overlay:     rgba(248, 250, 252, 0.94);
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #64748b;
+  --border:         rgba(15, 23, 42, 0.12);
+  --border-muted:   rgba(15, 23, 42, 0.08);
+  --fg:             #0f172a;
+  --fg-muted:       #475569;
+  --bg:             #f8fafc;
+  --bg2:            #f1f5f9;
+  --glass:          rgba(255, 255, 255, 0.88);
+  --glass2:         rgba(255, 255, 255, 0.96);
+  --section-bg:     rgba(15, 23, 42, 0.04);
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+body.light-mode header {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1) !important;
+}
+
+body.light-mode .desktop-sidebar,
+body.light-mode .mobile-sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid rgba(15, 23, 42, 0.1) !important;
+}
+
+body.light-mode .main-content {
+  background: #f8fafc !important;
+}
+
+body.light-mode .card,
+body.light-mode .ui-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05) !important;
+}
+
+body.light-mode input,
+body.light-mode select,
+body.light-mode textarea {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15, 23, 42, 0.2) !important;
+}
+
+body.light-mode input:focus,
+body.light-mode select:focus,
+body.light-mode textarea:focus {
+  border-color: #d4a853 !important;
+}
+
+body.light-mode .table-desktop-view table {
+  color: #0f172a !important;
+}
+
+body.light-mode .table-desktop-view th {
+  color: #64748b !important;
+}
+
+body.light-mode .table-desktop-view tr {
+  border-bottom-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+body.light-mode .table-desktop-view tr:hover {
+  background: rgba(15, 23, 42, 0.02) !important;
 }
 
 /* ============================================================
