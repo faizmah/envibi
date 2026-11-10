@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../app/providers/AuthProvider'
 
@@ -5,119 +6,278 @@ export default function AdminLayout() {
   const { user, profile, isSuperAdmin, signOut } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => { setSidebarOpen(false) }, [location.pathname])
 
   const navItems = [
-    { path: '/admin', label: '📊 Ringkasan Admin', icon: '⚡' },
-    { path: '/admin/members', label: '👥 Data Member', icon: '👤' },
-    { path: '/admin/accounts', label: '💳 Permohonan Rekening', icon: '📝' },
-    { path: '/admin/boxes', label: '📦 Kotak Tabungan & Resi', icon: '📫' },
-    { path: '/admin/nfc', label: '📡 Penulisan & Tag NFC', icon: '🏷️' },
-    { path: '/admin/transactions', label: '💸 Transaksi & Validasi', icon: '💰' },
-    { path: '/admin/audit', label: '🛡️ Audit Trail Log', icon: '📜' },
+    { path: '/admin', label: 'Ringkasan', icon: '⚡', desc: 'Overview & KPI' },
+    { path: '/admin/members', label: 'Data Member', icon: '👥', desc: 'Kelola anggota' },
+    { path: '/admin/accounts', label: 'Permohonan Rekening', icon: '💳', desc: 'Review & Setujui' },
+    { path: '/admin/boxes', label: 'Kotak Tabungan', icon: '📦', desc: 'Resi & Pengiriman' },
+    { path: '/admin/nfc', label: 'Tag NFC', icon: '📡', desc: 'Tulis & Verifikasi' },
+    { path: '/admin/transactions', label: 'Transaksi', icon: '💸', desc: 'Validasi mutasi' },
+    { path: '/admin/audit', label: 'Audit Trail', icon: '🛡️', desc: 'Log permanen' },
   ]
 
-  return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#0e1722', color: '#edf2f7' }}>
-      {/* Admin Topbar */}
-      <header style={{
-        height: '60px',
-        background: '#15212e',
-        borderBottom: '1px solid rgba(220, 230, 240, 0.1)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 24px',
-        zIndex: 50,
+  const userInitial = profile?.full_name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'A'
+  const userName = profile?.full_name || user?.email?.split('@')[0] || 'Admin'
+
+  const SidebarContent = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Sidebar Header */}
+      <div style={{
+        padding: '18px 16px 14px',
+        borderBottom: '1px solid rgba(139,92,246,0.2)',
+        background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(212,168,83,0.05))',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #e74c3c, #9b59b6)',
-            display: 'grid',
-            placeItems: 'center',
-            fontWeight: '900',
-            fontSize: '15px',
-          }}>
-            A
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '8px',
+              background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
+              display: 'grid', placeItems: 'center',
+              fontWeight: '900', fontSize: '14px', color: '#fff',
+              boxShadow: '0 4px 12px rgba(139,92,246,0.4)',
+            }}>A</div>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: '#f0f6fc', letterSpacing: '0.08em' }}>ADMIN CONSOLE</div>
+              <div style={{ fontSize: '9px', color: '#8b5cf6', fontWeight: '700' }}>
+                {isSuperAdmin ? '👑 Super Admin' : '🔧 Petugas Operasional'}
+              </div>
+            </div>
           </div>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '15px', fontWeight: '800', letterSpacing: '0.04em' }}>
-              NARAYAN ADMIN CONSOLE
-            </h1>
-            <small style={{ color: 'var(--fg-muted)', fontSize: '10px' }}>
-              {isSuperAdmin ? 'Super Administrator Access' : 'Operational Officer Access'}
-            </small>
-          </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            style={{
+              width: '26px', height: '26px', borderRadius: '6px', border: 'none',
+              background: 'rgba(240,246,252,0.08)', color: '#8b949e',
+              cursor: 'pointer', fontSize: '12px', display: 'grid', placeItems: 'center',
+            }}
+            className="mobile-close-btn"
+          >✕</button>
         </div>
+      </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Link to="/" className="btn btn-sm btn-secondary">
-            🏛️ Ke Kantor 3D
-          </Link>
-          <Link to="/dashboard" className="btn btn-sm btn-secondary">
-            👤 Mode Member
-          </Link>
-          <div style={{ fontSize: '12px', color: 'var(--fg-muted)', borderLeft: '1px solid var(--border)', paddingLeft: '12px' }}>
-            {profile?.full_name || user?.email}
-          </div>
-          <button onClick={() => signOut().then(() => navigate('/'))} className="btn btn-sm btn-danger">
-            Keluar
-          </button>
-        </div>
-      </header>
+      {/* Nav Section Label */}
+      <div style={{ padding: '12px 16px 4px', fontSize: '10px', fontWeight: '800', color: '#656d76', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        Menu Operasional
+      </div>
 
-      {/* Admin Body (Sidebar + Content) */}
-      <div style={{ flex: 1, display: 'flex' }}>
-        <aside style={{
-          width: '240px',
-          background: '#121c27',
-          borderRight: '1px solid rgba(220, 230, 240, 0.08)',
-          padding: '16px 10px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '4px',
+      {/* Nav Links */}
+      <nav style={{ flex: 1, overflowY: 'auto', padding: '4px 8px' }}>
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '10px 12px', borderRadius: '10px',
+                textDecoration: 'none', marginBottom: '2px',
+                color: isActive ? '#fff' : '#8b949e',
+                background: isActive
+                  ? 'linear-gradient(135deg, #7c3aed, #5b21b6)'
+                  : 'transparent',
+                fontWeight: isActive ? '700' : '500',
+                fontSize: '12.5px',
+                transition: 'all 0.15s ease',
+                border: isActive ? '1px solid rgba(139,92,246,0.4)' : '1px solid transparent',
+                boxShadow: isActive ? '0 4px 12px rgba(139,92,246,0.3)' : 'none',
+              }}
+              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(240,246,252,0.05)' }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+            >
+              <span style={{ fontSize: '15px', flexShrink: 0 }}>{item.icon}</span>
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ lineHeight: 1.2 }}>{item.label}</div>
+                {!isActive && <div style={{ fontSize: '10px', color: '#656d76', marginTop: '1px' }}>{item.desc}</div>}
+              </div>
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Divider */}
+      <div style={{ height: '1px', background: 'rgba(240,246,252,0.08)', margin: '0 16px' }} />
+
+      {/* Quick links */}
+      <div style={{ padding: '10px 8px 4px' }}>
+        <div style={{ fontSize: '10px', fontWeight: '800', color: '#656d76', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 8px 6px' }}>Navigasi Cepat</div>
+        {[
+          { to: '/', label: 'Kantor 3D', icon: '🏛️' },
+          { to: '/dashboard', label: 'Portal Member', icon: '👤' },
+        ].map(link => (
+          <Link
+            key={link.to}
+            to={link.to}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '8px 12px', borderRadius: '8px', textDecoration: 'none',
+              color: '#8b949e', fontSize: '12px', fontWeight: '500', marginBottom: '2px',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(240,246,252,0.05)'; e.currentTarget.style.color = '#f0f6fc' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8b949e' }}
+          >
+            <span>{link.icon}</span><span>{link.label}</span>
+          </Link>
+        ))}
+      </div>
+
+      {/* Sidebar Footer - User + Sign Out */}
+      <div style={{
+        padding: '12px', borderTop: '1px solid rgba(240,246,252,0.08)',
+        margin: '8px 0 0',
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px',
+          padding: '8px 10px', borderRadius: '10px',
+          background: 'rgba(240,246,252,0.04)',
+          marginBottom: '8px',
         }}>
-          <div style={{ padding: '0 8px 10px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--fg-muted)', fontWeight: '800' }}>
-            Menu Utama
+          <div style={{
+            width: '30px', height: '30px', borderRadius: '50%',
+            background: 'linear-gradient(135deg, #3b1f6e, #2a1554)',
+            border: '2px solid rgba(139,92,246,0.5)',
+            display: 'grid', placeItems: 'center',
+            fontWeight: '800', fontSize: '12px', color: '#c4b5fd', flexShrink: 0,
+          }}>{userInitial}</div>
+          <div style={{ overflow: 'hidden', flex: 1 }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: '#f0f6fc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
+            <div style={{ fontSize: '10px', color: '#656d76', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</div>
           </div>
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '10px 12px',
-                  borderRadius: '10px',
-                  textDecoration: 'none',
-                  color: isActive ? '#17212d' : '#edf2f7',
-                  background: isActive ? '#c39a58' : 'transparent',
-                  fontWeight: isActive ? '800' : '600',
-                  fontSize: '12.5px',
-                  transition: 'background 0.15s',
-                }}
-              >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </Link>
-            )
-          })}
+        </div>
+        <button
+          onClick={() => signOut().then(() => navigate('/'))}
+          style={{
+            width: '100%', padding: '8px', borderRadius: '8px',
+            border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)',
+            color: '#f87171', fontWeight: '700', fontSize: '12px', cursor: 'pointer',
+            transition: 'all 0.15s',
+          }}
+        >Keluar dari Sesi</button>
 
-          <div style={{ marginTop: 'auto', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', fontSize: '11px', color: 'var(--fg-muted)', lineHeight: '1.5' }}>
-            🔒 Sesi Operasional Aman. Seluruh mutasi & persetujuan dicatat permanen dalam Audit Log.
-          </div>
-        </aside>
-
-        <section style={{ flex: 1, padding: '24px 30px', overflowY: 'auto' }}>
-          <Outlet />
-        </section>
+        <div style={{ marginTop: '10px', padding: '8px 10px', borderRadius: '8px', background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)', fontSize: '10px', color: '#8b5cf6', lineHeight: '1.4', textAlign: 'center' }}>
+          🔒 Sesi Aman • Semua mutasi tercatat permanen
+        </div>
       </div>
     </div>
   )
-}
 
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#0d1117', color: '#f0f6fc' }}>
+      {/* ─── Mobile Backdrop ─── */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 149,
+            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+          }}
+        />
+      )}
+
+      {/* ─── Admin Topbar ─── */}
+      <header style={{
+        height: '56px', flexShrink: 0,
+        background: '#161b22',
+        borderBottom: '1px solid rgba(139,92,246,0.15)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 20px', position: 'sticky', top: 0, zIndex: 100,
+        boxShadow: '0 1px 0 rgba(139,92,246,0.1)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            style={{
+              width: '32px', height: '32px', borderRadius: '8px', border: 'none',
+              background: 'rgba(139,92,246,0.15)', color: '#c4b5fd',
+              cursor: 'pointer', fontSize: '14px', display: 'none', placeItems: 'center',
+            }}
+            className="admin-hamburger"
+          >☰</button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '28px', height: '28px', borderRadius: '7px',
+              background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
+              display: 'grid', placeItems: 'center', fontWeight: '900', fontSize: '13px', color: '#fff',
+              boxShadow: '0 2px 8px rgba(139,92,246,0.4)',
+            }}>A</div>
+            <div>
+              <div style={{ fontSize: '12px', fontWeight: '800', letterSpacing: '0.05em', color: '#f0f6fc' }}>NARAYAN ADMIN</div>
+              <div style={{ fontSize: '9px', color: '#8b5cf6', fontWeight: '700' }}>
+                {isSuperAdmin ? 'Super Administrator' : 'Petugas Operasional'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{
+            padding: '4px 10px', borderRadius: '20px',
+            background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
+            fontSize: '10px', fontWeight: '800', color: '#c4b5fd', letterSpacing: '0.05em',
+          }} className="hide-mobile">🔴 LIVE</div>
+          <div style={{ fontSize: '11px', color: '#656d76', borderLeft: '1px solid rgba(240,246,252,0.08)', paddingLeft: '12px' }} className="hide-mobile">
+            {userName}
+          </div>
+        </div>
+      </header>
+
+      {/* ─── Body: Sidebar + Content ─── */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+        {/* Desktop Sidebar */}
+        <aside style={{
+          width: '240px', flexShrink: 0,
+          background: '#161b22',
+          borderRight: '1px solid rgba(139,92,246,0.1)',
+          overflowY: 'auto',
+          display: 'flex', flexDirection: 'column',
+        }} className="desktop-sidebar">
+          <SidebarContent />
+        </aside>
+
+        {/* Mobile Drawer Sidebar */}
+        <aside style={{
+          position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 150,
+          width: '260px',
+          background: '#161b22',
+          borderRight: '1px solid rgba(139,92,246,0.2)',
+          boxShadow: '4px 0 24px rgba(0,0,0,0.6)',
+          overflowY: 'auto',
+          transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)',
+        }} className="mobile-sidebar">
+          <SidebarContent />
+        </aside>
+
+        {/* Main Content */}
+        <section style={{
+          flex: 1, overflowY: 'auto',
+          padding: 'clamp(16px, 2.5vw, 30px)',
+          background: '#0d1117',
+          minHeight: 'calc(100vh - 56px)',
+        }}>
+          <Outlet />
+        </section>
+      </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-sidebar { display: none !important; }
+          .admin-hamburger { display: grid !important; }
+          .hide-mobile { display: none !important; }
+        }
+        @media (min-width: 769px) {
+          .mobile-sidebar { display: none !important; }
+          .mobile-close-btn { display: none !important; }
+        }
+      `}</style>
+    </div>
+  )
+}

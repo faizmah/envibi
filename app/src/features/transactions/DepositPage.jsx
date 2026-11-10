@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../app/providers/AuthProvider'
 import { supabase } from '../../services/supabase/client'
 import { readNFCTag, isNFCSupported } from '../../services/nfc/nfcService'
@@ -8,7 +8,6 @@ import { formatRupiah, generateIdempotencyKey } from '../../utils/format'
 export default function DepositPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
 
   const [step, setStep] = useState(1) // 1: Scan NFC, 2: Form Nominal, 3: Konfirmasi Fisik, 4: Berhasil
   const [account, setAccount] = useState(null)
@@ -16,8 +15,7 @@ export default function DepositPage() {
   const [loading, setLoading] = useState(true)
 
   // Form states
-  const paramAmount = searchParams.get('amount')
-  const [amount, setAmount] = useState(paramAmount ? Number(paramAmount) : 50000)
+  const [amount, setAmount] = useState(50000)
   const [notes, setNotes] = useState('')
   const [nfcScanned, setNfcScanned] = useState(false)
   const [scannedToken, setScannedToken] = useState('')

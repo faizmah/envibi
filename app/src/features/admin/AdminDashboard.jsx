@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../../services/supabase/client'
+import { subscribeToAllApplications } from '../../services/realtime/realtimeService';
+
 import { formatRupiah, formatDateTime } from '../../utils/format'
 
 export default function AdminDashboard() {
@@ -11,10 +12,21 @@ export default function AdminDashboard() {
   const loadData = async () => {
     setLoading(true)
 
-    // Panggil RPC get_admin_dashboard_data
-    const { data: dashData } = await supabase.rpc('get_admin_dashboard_data')
+    // Panggil RPC get_admin_dashboard_data (fallback to manual query if RPC unavailable)
+    const { data: dashData, error: rpcError } = await supabase.rpc('get_admin_dashboard_data')
     if (dashData?.ok) {
       setStats(dashData)
+    } else {
+      // Fallback: hit the table directly for pending applications count
+      const { count: pendingCount, error: cntErr } = await supabase
+        .from('account_applications')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'PENDING')
+      // Preserve any previously fetched stats (if any) and inject pending count
+      setStats(prev => ({
+        ...(prev || {}),
+        pending_applications: pendingCount ?? 0,
+      }))
     }
 
     // Ambil log aktivitas terbaru
@@ -29,8 +41,10 @@ export default function AdminDashboard() {
   }
 
   useEffect(() => {
-    loadData()
-  }, [])
+  loadData();
+  const unsub = subscribeToAllApplications(() => loadData());
+  return () => unsub?.();
+}, []);
 
   if (loading) {
     return (
