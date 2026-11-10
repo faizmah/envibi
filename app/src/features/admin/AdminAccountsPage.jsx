@@ -19,21 +19,51 @@ export default function AdminAccountsPage() {
   const loadData = async () => {
     setLoading(true)
 
-    // 1. Ambil pengajuan rekening
-    const { data: apps } = await supabase
+    // 1. Ambil pengajuan rekening secara aman (tanpa mengandalkan embedding FK schema cache)
+    const { data: rawApps, error: appsErr } = await supabase
       .from('account_applications')
-      .select('*, profiles:user_id(full_name, email, phone)')
+      .select('*')
       .order('created_at', { ascending: false })
 
-    if (apps) setApplications(apps)
+    let appsWithProfiles = rawApps || []
+    if (rawApps && rawApps.length > 0) {
+      const userIds = [...new Set(rawApps.map((a) => a.user_id).filter(Boolean))]
+      if (userIds.length > 0) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, phone')
+          .in('id', userIds)
+        const profMap = new Map((profs || []).map((p) => [p.id, p]))
+        appsWithProfiles = rawApps.map((a) => ({
+          ...a,
+          profiles: profMap.get(a.user_id) || { full_name: 'Member', email: '-' },
+        }))
+      }
+    }
+    setApplications(appsWithProfiles)
 
-    // 2. Ambil seluruh rekening aktif/beku
-    const { data: accs } = await supabase
+    // 2. Ambil seluruh rekening aktif/beku secara aman
+    const { data: rawAccs, error: accsErr } = await supabase
       .from('accounts')
-      .select('*, profiles:user_id(full_name, email)')
+      .select('*')
       .order('created_at', { ascending: false })
 
-    if (accs) setAccounts(accs)
+    let accsWithProfiles = rawAccs || []
+    if (rawAccs && rawAccs.length > 0) {
+      const userIds = [...new Set(rawAccs.map((a) => a.user_id).filter(Boolean))]
+      if (userIds.length > 0) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds)
+        const profMap = new Map((profs || []).map((p) => [p.id, p]))
+        accsWithProfiles = rawAccs.map((a) => ({
+          ...a,
+          profiles: profMap.get(a.user_id) || { full_name: 'Member', email: '-' },
+        }))
+      }
+    }
+    setAccounts(accsWithProfiles)
 
     setLoading(false)
   }
