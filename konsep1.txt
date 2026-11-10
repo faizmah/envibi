@@ -1,0 +1,1104 @@
+# MASTER PROMPT ANTIGRAVITY
+# NARAYAN VIRTUAL BANK — REALTIME SELF-SAVING NFC SYSTEM
+
+## 1. ROLE
+
+Kamu bertindak sebagai Senior Full-Stack JavaScript Engineer, Software Architect, Database Engineer, Supabase Specialist, NFC/Web NFC Developer, Three.js Developer, dan UI/UX Designer.
+
+Tugasmu adalah mengembangkan aplikasi **Narayan Virtual Bank Tahap 7.1** menjadi aplikasi web berbasis JavaScript Framework yang modular, aman, realtime, dan siap digunakan oleh banyak member serta admin dari perangkat berbeda.
+
+Jangan hanya membuat prototype tampilan. Bangun sistem yang memiliki backend, database bersama, autentikasi, otorisasi, pencatatan transaksi, integrasi NFC, dan sinkronisasi realtime.
+
+---
+
+## 2. KONSEP UTAMA APLIKASI
+
+Narayan Virtual Bank adalah sistem pengelolaan tabungan mandiri.
+
+Sistem administrasi dan pencatatan mengikuti alur bank konvensional, tetapi uang fisik tidak disimpan di kantor bank. Setiap member menyimpan uangnya sendiri di rumah menggunakan kotak tabungan fisik yang telah ditautkan ke rekening melalui NFC.
+
+Setiap member memiliki:
+
+- Akun login.
+- Profil identitas.
+- Nomor rekening.
+- Rekening tabungan.
+- Kotak tabungan fisik.
+- Tag NFC yang terhubung dengan rekening.
+- Riwayat setor dan tarik.
+- Saldo tabungan digital.
+- Laporan keuangan pribadi.
+- Riwayat aktivitas dan notifikasi.
+
+Admin memiliki wewenang untuk mengelola member, memproses permintaan rekening, menyiapkan kotak tabungan, menulis NFC, memverifikasi transaksi, serta memantau seluruh aktivitas.
+
+### Prinsip utama
+
+1. Satu member dapat memiliki satu atau beberapa rekening sesuai kebijakan admin.
+2. Satu rekening tabungan memiliki hubungan dengan kotak tabungan fisik.
+3. Setiap kotak tabungan memiliki identitas NFC unik.
+4. Setiap transaksi wajib tercatat dalam database.
+5. Member dan admin mendapatkan pembaruan data secara realtime.
+6. Tidak boleh ada perubahan saldo langsung dari browser tanpa validasi backend.
+7. Semua aktivitas penting wajib memiliki audit log.
+8. Sistem harus membedakan saldo pembukuan dan uang fisik yang disimpan member.
+
+**Catatan operasional:** Sistem ini merupakan platform pembukuan tabungan mandiri, bukan sistem yang dapat membuktikan keberadaan uang tunai secara otomatis. Setoran dan penarikan fisik tetap memerlukan pelaporan serta konfirmasi pengguna. Jangan mengklaim uang fisik telah diverifikasi jika belum ada proses verifikasi yang sesuai.
+
+---
+
+# 3. TEKNOLOGI YANG DIGUNAKAN
+
+Gunakan arsitektur berikut:
+
+### Frontend
+- React 18 atau versi stabil yang kompatibel.
+- Vite.
+- JavaScript ES Modules.
+- Three.js untuk mempertahankan visualisasi kantor virtual 3D.
+- React Router untuk navigasi.
+- CSS modular atau CSS terstruktur.
+- Responsive design untuk desktop dan mobile.
+
+### Backend dan database
+- Supabase Authentication.
+- Supabase PostgreSQL.
+- Supabase Row Level Security (RLS).
+- Supabase Realtime.
+- Supabase RPC / PostgreSQL Functions.
+- Supabase Edge Functions jika diperlukan untuk operasi backend.
+- Supabase Storage untuk dokumen profil dan lampiran.
+
+### Deployment
+- Vercel untuk frontend.
+- Supabase untuk backend.
+- Environment variables untuk konfigurasi.
+- Git untuk version control.
+
+### NFC
+- Web NFC API untuk membaca dan menulis NFC NDEF pada perangkat dan browser yang kompatibel.
+- NDEF URL Record untuk menyimpan tautan identitas kotak tabungan.
+- Fallback menggunakan aplikasi NFC writer atau aplikasi Android pendamping apabila Web NFC tidak didukung.
+
+Jangan menggunakan localStorage sebagai sumber utama data rekening, saldo, transaksi, atau autentikasi.
+
+localStorage hanya boleh digunakan untuk preferensi UI yang tidak sensitif.
+
+---
+
+# 4. SISTEM MEMBER
+
+## A. Registrasi dan login
+
+Member dapat:
+
+- Mendaftar menggunakan email dan password.
+- Login dan logout.
+- Melakukan reset password.
+- Melengkapi profil.
+- Mengubah informasi profil yang diizinkan.
+- Melihat status verifikasi akun.
+
+Data profil minimal:
+
+- Nama lengkap.
+- Email.
+- Nomor telepon.
+- Alamat.
+- Tanggal lahir jika diperlukan.
+- Foto profil.
+- Identitas tambahan sesuai kebijakan operasional.
+
+Jangan menyimpan password atau PIN dalam bentuk plaintext.
+
+Gunakan Supabase Auth sebagai sistem autentikasi utama.
+
+## B. Dashboard member
+
+Setelah login, member masuk ke dashboard pribadi.
+
+Tampilkan:
+
+1. Nama member.
+2. Nomor rekening.
+3. Status rekening.
+4. Saldo pembukuan.
+5. Total setoran.
+6. Total penarikan.
+7. Saldo fisik yang dilaporkan.
+8. Selisih saldo pembukuan dan saldo fisik yang dilaporkan.
+9. Status kotak tabungan.
+10. Status NFC.
+11. Riwayat transaksi terbaru.
+12. Grafik perkembangan tabungan.
+13. Notifikasi.
+
+Member hanya boleh melihat data miliknya sendiri.
+
+## C. Pengajuan rekening
+
+Member dapat mengajukan pembukaan rekening.
+
+Alur:
+
+1. Member mengisi formulir pembukaan rekening.
+2. Member mengirim permintaan.
+3. Sistem membuat pengajuan dengan status `PENDING`.
+4. Admin mendapatkan notifikasi realtime.
+5. Admin memeriksa data.
+6. Admin dapat menyetujui, menolak, atau meminta revisi.
+7. Jika disetujui, backend membuat rekening dan nomor rekening unik.
+8. Member mendapatkan notifikasi.
+9. Member dapat melihat status rekening.
+
+Status pengajuan:
+
+- `PENDING`
+- `UNDER_REVIEW`
+- `REVISION_REQUIRED`
+- `APPROVED`
+- `REJECTED`
+
+Nomor rekening harus dibuat oleh backend dan tidak boleh duplikat.
+
+---
+
+# 5. SISTEM KOTAK TABUNGAN FISIK
+
+Ini merupakan fitur utama aplikasi.
+
+Setiap member yang rekeningnya telah disetujui akan mendapatkan fasilitas kotak tabungan fisik.
+
+Kotak tabungan berada di rumah masing-masing member.
+
+Admin bertugas menyiapkan identitas kotak, menghubungkan rekening, dan mengaktifkan NFC.
+
+## A. Manajemen kotak tabungan oleh admin
+
+Admin dapat:
+
+- Membuat data kotak tabungan.
+- Memberikan kode unik kotak.
+- Menghubungkan kotak dengan member.
+- Menghubungkan kotak dengan rekening.
+- Menentukan status kotak.
+- Menyiapkan tag NFC.
+- Melihat riwayat pengaitan NFC.
+- Mengaktifkan atau menonaktifkan kotak.
+- Mencatat pengiriman kotak.
+- Memasukkan nomor resi pengiriman.
+- Mengubah status pengiriman.
+
+Status kotak:
+
+- `PREPARING`
+- `NFC_PENDING`
+- `READY_TO_SHIP`
+- `SHIPPED`
+- `RECEIVED`
+- `ACTIVE`
+- `SUSPENDED`
+- `REPLACED`
+
+## B. Pengaitan rekening dengan NFC
+
+Setiap kotak tabungan memiliki tag NFC.
+
+Admin melakukan proses:
+
+1. Membuka menu pengelolaan kotak.
+2. Memilih member.
+3. Memilih rekening.
+4. Membuat identitas kotak tabungan.
+5. Menekan tombol tulis NFC.
+6. Mendekatkan tag NFC ke perangkat yang mendukung penulisan NFC.
+7. Sistem menulis NDEF URL ke tag.
+8. Sistem membaca kembali tag untuk memastikan data berhasil ditulis.
+9. Sistem memvalidasi token dan identitas kotak.
+10. Sistem mengaktifkan hubungan rekening dengan kotak.
+
+### Format NDEF
+
+Gunakan NDEF URL Record yang mengarah ke alamat aplikasi.
+
+Contoh:
+
+`https://domain-aplikasi.com/nfc/BOX_PUBLIC_TOKEN`
+
+`BOX_PUBLIC_TOKEN` merupakan token identifikasi acak yang tidak mengandung nomor rekening, PIN, password, atau data pribadi.
+
+Jangan menulis informasi sensitif ke dalam tag NFC.
+
+NFC hanya menyimpan tautan identitas kotak. Semua validasi kepemilikan rekening dilakukan oleh backend.
+
+### Fitur NFC yang wajib dibuat
+
+- Tombol `Tulis NFC`.
+- Tombol `Baca NFC`.
+- Tombol `Verifikasi NFC`.
+- Indikator perangkat mendukung NFC.
+- Status proses penulisan.
+- Status berhasil atau gagal.
+- Validasi token.
+- Deteksi tag yang sudah digunakan.
+- Deteksi tag yang tidak terdaftar.
+- Riwayat penulisan NFC.
+- Riwayat penggantian tag.
+- Mekanisme menonaktifkan token lama jika tag diganti.
+
+Gunakan Web NFC API dengan deteksi dukungan browser.
+
+Jika perangkat tidak mendukung Web NFC, tampilkan petunjuk alternatif. Jangan membuat tombol NFC palsu yang hanya mengubah status tanpa benar-benar menulis atau membaca tag.
+
+Web NFC umumnya memerlukan browser dan perangkat Android yang kompatibel serta koneksi HTTPS. Buat lapisan layanan NFC terpisah agar nantinya dapat digunakan kembali pada aplikasi Android.
+
+---
+
+# 6. KONFIRMASI KOTAK OLEH MEMBER
+
+Setelah admin menyiapkan kotak tabungan:
+
+1. Admin mengubah status menjadi `READY_TO_SHIP`.
+2. Admin mengirim kotak kepada member.
+3. Admin memasukkan informasi pengiriman.
+4. Member mendapatkan notifikasi.
+5. Member menerima kotak tabungan.
+6. Member login ke aplikasi.
+7. Member membuka menu Aktivasi Kotak.
+8. Member menekan tombol `Scan NFC`.
+9. Member mendekatkan perangkat ke tag NFC.
+10. Sistem membaca identitas kotak.
+11. Backend memeriksa apakah tag terdaftar dan ditautkan ke rekening member tersebut.
+12. Member melakukan konfirmasi penerimaan.
+13. Sistem mengubah status kotak menjadi `ACTIVE`.
+
+Sistem harus memastikan member tidak dapat mengaktifkan kotak milik member lain.
+
+Status penerimaan harus tercatat dengan waktu, akun pengguna, dan identitas kotak.
+
+---
+
+# 7. SISTEM TRANSAKSI TABUNGAN
+
+Setelah kotak aktif, member dapat melakukan setor dan tarik.
+
+Alur harus menyerupai layanan bank konvensional, tetapi transaksi fisik dilakukan sendiri oleh member.
+
+## A. Setoran tabungan
+
+Alur:
+
+1. Member membuka aplikasi.
+2. Member memilih menu Setor Tabungan.
+3. Member memindai NFC pada kotak.
+4. Sistem mengenali kotak dan rekening.
+5. Member memasukkan nominal uang yang dimasukkan ke kotak.
+6. Member dapat menambahkan catatan.
+7. Member mengirim laporan setoran.
+8. Sistem membuat transaksi dengan status `PENDING_CONFIRMATION`.
+9. Member melakukan konfirmasi bahwa uang telah dimasukkan secara fisik.
+10. Backend memproses transaksi sesuai aturan sistem.
+11. Saldo pembukuan diperbarui secara atomik.
+12. Sistem membuat catatan transaksi dan audit log.
+13. Member mendapatkan notifikasi.
+14. Dashboard diperbarui realtime.
+
+Data yang dicatat:
+
+- Nomor transaksi.
+- Member.
+- Nomor rekening.
+- Identitas kotak.
+- Nominal setoran.
+- Waktu pelaporan.
+- Waktu konfirmasi.
+- Status transaksi.
+- Catatan.
+- Sumber transaksi.
+- Riwayat perubahan status.
+
+## B. Penarikan tabungan
+
+Alur:
+
+1. Member membuka aplikasi.
+2. Memilih menu Tarik Tabungan.
+3. Memindai NFC pada kotak.
+4. Sistem memvalidasi identitas kotak.
+5. Member memasukkan nominal penarikan.
+6. Backend memeriksa saldo pembukuan dan aturan penarikan.
+7. Sistem membuat permintaan penarikan.
+8. Member melakukan konfirmasi pengambilan uang dari kotak.
+9. Sistem memproses transaksi sesuai aturan.
+10. Saldo pembukuan diperbarui.
+11. Transaksi masuk ke riwayat.
+12. Audit log dibuat.
+13. Dashboard diperbarui realtime.
+
+Jangan izinkan penarikan melebihi saldo yang tersedia.
+
+Untuk nominal atau kondisi tertentu, sistem dapat mewajibkan persetujuan admin.
+
+## C. Rekonsiliasi saldo fisik
+
+Karena uang berada di rumah member, sediakan fitur pencocokan saldo.
+
+Tampilkan:
+
+- Saldo pembukuan sistem.
+- Saldo fisik yang dilaporkan member.
+- Selisih saldo.
+- Waktu laporan terakhir.
+- Status rekonsiliasi.
+
+Contoh:
+
+Saldo pembukuan: Rp500.000
+
+Saldo fisik dilaporkan: Rp500.000
+
+Selisih: Rp0
+
+Status: Sesuai
+
+Jika terdapat perbedaan, sistem membuat laporan selisih dan meminta klarifikasi. Jangan otomatis mengubah saldo pembukuan untuk menyamakan saldo fisik.
+
+---
+
+# 8. SISTEM PENGELOLAAN KEUANGAN MEMBER
+
+Aplikasi bukan hanya untuk mencatat tabungan.
+
+Member juga harus dapat mengelola keuangan pribadi berdasarkan transaksi yang tercatat.
+
+Buat menu:
+
+## A. Ringkasan keuangan
+
+- Total tabungan.
+- Total setoran.
+- Total penarikan.
+- Perkembangan tabungan.
+- Target tabungan.
+- Rata-rata setoran.
+- Grafik bulanan.
+
+## B. Target tabungan
+
+Member dapat:
+
+- Membuat target tabungan.
+- Menentukan nominal target.
+- Menentukan tanggal target.
+- Melihat persentase pencapaian.
+- Melihat estimasi waktu mencapai target.
+
+## C. Riwayat keuangan
+
+Tampilkan seluruh aktivitas:
+
+- Setoran.
+- Penarikan.
+- Koreksi yang disetujui.
+- Penyesuaian.
+- Penggantian kotak.
+- Aktivasi NFC.
+
+Sediakan filter berdasarkan tanggal, jenis transaksi, rekening, dan status.
+
+## D. Laporan
+
+Member dapat melihat dan mengunduh laporan dalam format PDF atau CSV.
+
+---
+
+# 9. SISTEM ADMIN
+
+Buat dashboard admin terpisah dengan role-based access control.
+
+Admin memiliki fitur:
+
+### A. Dashboard
+- Total member.
+- Total rekening aktif.
+- Pengajuan rekening baru.
+- Kotak tabungan dalam persiapan.
+- Kotak yang sudah dikirim.
+- Kotak yang sudah aktif.
+- Total saldo pembukuan.
+- Total setoran.
+- Total penarikan.
+- Transaksi menunggu konfirmasi.
+- Aktivitas terbaru.
+
+### B. Manajemen member
+- Daftar member.
+- Detail profil.
+- Status akun.
+- Status rekening.
+- Status kotak.
+- Riwayat transaksi.
+- Riwayat aktivitas.
+
+### C. Manajemen rekening
+- Persetujuan rekening.
+- Penolakan rekening.
+- Permintaan revisi.
+- Pembuatan nomor rekening.
+- Aktivasi dan penonaktifan rekening.
+
+### D. Manajemen kotak dan NFC
+- Membuat kotak.
+- Menghubungkan kotak ke rekening.
+- Menulis NFC.
+- Membaca NFC.
+- Memverifikasi NFC.
+- Mengganti NFC.
+- Mengirim kotak.
+- Mengaktifkan atau menonaktifkan kotak.
+
+### E. Manajemen transaksi
+- Melihat transaksi realtime.
+- Memeriksa transaksi pending.
+- Menyetujui transaksi yang memerlukan otorisasi.
+- Menolak transaksi.
+- Meminta klarifikasi.
+- Membuat koreksi dengan alasan yang wajib diisi.
+
+### F. Audit log
+Admin dapat memeriksa seluruh aktivitas penting.
+
+Jangan izinkan admin menghapus riwayat transaksi secara permanen.
+
+---
+
+# 10. REALTIME SYSTEM
+
+Sistem harus bekerja pada beberapa perangkat secara bersamaan.
+
+Contoh:
+
+- Member login dari HP.
+- Admin login dari komputer.
+- Member mengirim pengajuan rekening.
+- Admin langsung menerima notifikasi tanpa refresh halaman.
+- Admin menyetujui rekening.
+- Member langsung melihat status berubah.
+- Admin menautkan kotak dan NFC.
+- Member menerima notifikasi.
+- Member mengaktifkan kotak.
+- Admin dapat melihat status kotak berubah.
+- Member melakukan setoran.
+- Riwayat dan dashboard diperbarui realtime.
+
+Gunakan Supabase Realtime untuk:
+
+- Perubahan status pengajuan.
+- Perubahan status rekening.
+- Status kotak tabungan.
+- Status NFC.
+- Transaksi baru.
+- Perubahan saldo.
+- Notifikasi.
+- Aktivitas admin.
+
+Gunakan subscription berdasarkan hak akses. Jangan mengirim data seluruh member ke browser setiap pengguna.
+
+Tambahkan mekanisme reconnect dan sinkronisasi ulang ketika koneksi terputus.
+
+---
+
+# 11. DATABASE DESIGN
+
+Rancang database PostgreSQL dengan relasi yang jelas.
+
+Tabel minimum:
+
+### `profiles`
+Profil pengguna dan identitas akun.
+
+Kolom utama:
+- id
+- full_name
+- email
+- phone
+- address
+- avatar_url
+- verification_status
+- created_at
+- updated_at
+
+### `user_roles`
+Role pengguna.
+
+Kolom:
+- id
+- user_id
+- role
+- created_at
+
+Role:
+- `MEMBER`
+- `ADMIN`
+- `SUPER_ADMIN`
+
+Role harus ditentukan secara aman oleh backend, tidak dapat diubah oleh member sendiri.
+
+### `account_applications`
+Pengajuan pembukaan rekening.
+
+### `accounts`
+Data rekening.
+
+Kolom:
+- id
+- account_number
+- user_id
+- account_type
+- status
+- currency
+- created_at
+
+### `savings_boxes`
+Identitas kotak tabungan fisik.
+
+Kolom:
+- id
+- box_code
+- user_id
+- account_id
+- status
+- shipped_at
+- received_at
+- activated_at
+- created_at
+
+### `nfc_tags`
+Data tag NFC.
+
+Kolom:
+- id
+- box_id
+- public_token_hash
+- tag_uid jika tersedia dan diperlukan
+- status
+- written_at
+- verified_at
+- replaced_at
+- created_at
+
+Jangan menyimpan token rahasia dalam bentuk plaintext jika tidak diperlukan.
+
+### `transactions`
+Data transaksi tabungan.
+
+Kolom:
+- id
+- transaction_number
+- account_id
+- user_id
+- box_id
+- transaction_type
+- amount
+- status
+- description
+- idempotency_key
+- submitted_at
+- confirmed_at
+- processed_at
+- created_at
+
+### `ledger_entries`
+Pencatatan mutasi pembukuan.
+
+Kolom:
+- id
+- transaction_id
+- account_id
+- entry_type
+- amount
+- balance_after
+- created_at
+
+### `physical_balance_reports`
+Laporan saldo fisik dari member.
+
+Kolom:
+- id
+- account_id
+- box_id
+- reported_balance
+- book_balance_snapshot
+- difference_amount
+- notes
+- created_at
+
+### `notifications`
+Notifikasi member dan admin.
+
+### `shipments`
+Informasi pengiriman kotak.
+
+### `audit_logs`
+Riwayat aktivitas penting.
+
+Kolom:
+- id
+- actor_id
+- action
+- entity_type
+- entity_id
+- old_data
+- new_data
+- ip_address jika tersedia
+- created_at
+
+Tambahkan indeks, foreign key, unique constraint, dan aturan penghapusan yang aman.
+
+Pastikan semua perubahan skema dibuat dalam file migration SQL.
+
+---
+
+# 12. KEAMANAN DAN VALIDASI
+
+Ini merupakan bagian yang wajib diperhatikan.
+
+1. Gunakan Supabase Auth.
+2. Aktifkan RLS pada seluruh tabel yang menyimpan data pribadi atau keuangan.
+3. Member hanya dapat mengakses rekening dan transaksi miliknya.
+4. Admin hanya dapat melakukan tindakan sesuai role.
+5. Super Admin memiliki kewenangan khusus.
+6. Jangan pernah menaruh service role key di frontend.
+7. Jangan menyimpan PIN atau password dalam plaintext.
+8. Validasi semua nominal di backend.
+9. Gunakan transaksi database atomik untuk perubahan saldo.
+10. Gunakan idempotency key untuk mencegah transaksi ganda.
+11. Cegah saldo negatif.
+12. Validasi kepemilikan rekening dan kotak.
+13. Validasi token NFC di backend.
+14. Catat setiap perubahan penting dalam audit log.
+15. Jangan izinkan perubahan transaksi yang sudah diproses tanpa mekanisme koreksi resmi.
+16. Jangan izinkan pengubahan saldo melalui manipulasi JavaScript browser.
+17. Jangan mempercayai role yang dikirim oleh frontend.
+
+Seluruh operasi keuangan harus menggunakan database function/RPC atau backend yang memiliki validasi dan otorisasi yang benar.
+
+Buat mekanisme pembukuan yang konsisten. Setiap transaksi yang berhasil harus memiliki catatan ledger yang sesuai. Jangan hanya mengubah angka saldo.
+
+---
+
+# 13. ARSITEKTUR APLIKASI
+
+Susun proyek dengan struktur modular.
+
+Contoh:
+
+```text
+narayan-virtual-bank/
+│
+├── public/
+│
+├── src/
+│   ├── app/
+│   │   ├── router/
+│   │   └── providers/
+│   │
+│   ├── components/
+│   │   ├── common/
+│   │   ├── forms/
+│   │   ├── dashboard/
+│   │   └── notifications/
+│   │
+│   ├── features/
+│   │   ├── auth/
+│   │   ├── members/
+│   │   ├── accounts/
+│   │   ├── savings/
+│   │   ├── transactions/
+│   │   ├── nfc/
+│   │   ├── admin/
+│   │   ├── reports/
+│   │   └── audit/
+│   │
+│   ├── three/
+│   │   ├── scene/
+│   │   ├── characters/
+│   │   ├── office/
+│   │   └── workflows/
+│   │
+│   ├── services/
+│   │   ├── supabase/
+│   │   ├── realtime/
+│   │   ├── nfc/
+│   │   └── notifications/
+│   │
+│   ├── hooks/
+│   ├── layouts/
+│   ├── styles/
+│   └── utils/
+│
+├── supabase/
+│   ├── migrations/
+│   ├── functions/
+│   └── seed.sql
+│
+├── .env.example
+├── package.json
+├── vite.config.js
+└── README.md
+```
+
+Struktur boleh dikembangkan sesuai kebutuhan, tetapi pisahkan komponen UI, layanan backend, logika bisnis, dan visualisasi Three.js.
+
+---
+
+# 14. PERTAHANKAN FITUR APLIKASI LAMA
+
+Sumber utama pengembangan adalah file:
+
+`Narayan_Virtual_Bank_Tahap_7_1_Portal_Fix.html`
+
+Sebelum melakukan perubahan:
+
+1. Pelajari seluruh kode.
+2. Petakan semua fitur.
+3. Identifikasi seluruh fungsi yang sudah bekerja.
+4. Identifikasi ketergantungan antarfitur.
+5. Petakan sistem member.
+6. Petakan sistem admin.
+7. Petakan sistem rekening.
+8. Petakan sistem transaksi.
+9. Petakan visualisasi kantor virtual 3D.
+10. Identifikasi semua data yang masih menggunakan localStorage.
+
+Jangan langsung menghapus atau mengganti seluruh sistem.
+
+Pertahankan dan migrasikan fitur yang sudah ada:
+
+- Kantor virtual 3D.
+- Karakter dan staf.
+- Sistem antrean.
+- Pergerakan staf.
+- Interaksi layanan.
+- Dashboard bank.
+- Portal member.
+- Sistem rekening.
+- Jurnal transaksi.
+- Riwayat aktivitas.
+- Sistem layanan.
+- Tampilan mobile.
+- Komponen UI yang masih relevan.
+
+Integrasikan fitur NFC dan tabungan fisik sebagai bagian dari sistem yang sudah ada.
+
+**Jangan menghilangkan simulasi kantor virtual 3D hanya karena sistem backend berubah.**
+
+Gunakan database yang sama sebagai sumber data utama bagi portal member, dashboard admin, dan simulasi kantor virtual.
+
+---
+
+# 15. HUBUNGAN SISTEM DENGAN KANTOR VIRTUAL 3D
+
+Kantor virtual tetap menjadi pusat operasional Narayan Virtual Bank.
+
+Ketika member mengajukan rekening:
+
+- Data masuk ke database.
+- Admin menerima notifikasi.
+- Dashboard kantor menampilkan pekerjaan baru.
+- Staf virtual dapat merepresentasikan proses pelayanan.
+
+Ketika admin menyetujui rekening:
+
+- Status rekening berubah.
+- Sistem mencatat aktivitas.
+- Member mendapatkan notifikasi.
+- Dashboard 3D memperbarui status layanan.
+
+Ketika member mengajukan layanan atau melakukan aktivitas yang memerlukan staf:
+
+- Sistem membuat event operasional.
+- Event ditampilkan di kantor virtual.
+- Karakter dan staf dapat menjalankan alur pelayanan yang sesuai.
+- Status visual mengikuti status backend.
+
+Three.js hanya bertugas menampilkan visualisasi dan interaksi.
+
+Jangan menjadikan animasi 3D sebagai sumber kebenaran transaksi atau saldo.
+
+---
+
+# 16. NOTIFIKASI
+
+Buat notifikasi realtime untuk:
+
+### Member
+- Pengajuan rekening diterima.
+- Pengajuan rekening disetujui.
+- Pengajuan membutuhkan revisi.
+- Nomor rekening diterbitkan.
+- Kotak sedang disiapkan.
+- Kotak dikirim.
+- Kotak diterima dan diaktifkan.
+- NFC berhasil ditautkan.
+- Setoran berhasil diproses.
+- Penarikan berhasil diproses.
+- Transaksi membutuhkan konfirmasi.
+- Ada selisih laporan saldo fisik.
+
+### Admin
+- Member baru mendaftar.
+- Pengajuan rekening baru.
+- Member mengonfirmasi kotak.
+- Transaksi baru.
+- Transaksi memerlukan pemeriksaan.
+- NFC gagal diverifikasi.
+- Ada laporan selisih saldo.
+- Ada permintaan bantuan.
+
+---
+
+# 17. TAHAP PENGERJAAN
+
+Kerjakan secara bertahap. Jangan membangun semuanya sekaligus tanpa pengujian.
+
+## Tahap 1 — Audit dan migrasi fondasi
+
+- Audit file HTML lama.
+- Buat feature map.
+- Buat arsitektur React + Vite.
+- Migrasikan UI.
+- Pertahankan fitur Three.js.
+- Buat koneksi Supabase.
+- Siapkan environment variables.
+
+Output: aplikasi dapat berjalan dengan framework baru.
+
+## Tahap 2 — Authentication dan role
+
+- Registrasi.
+- Login.
+- Logout.
+- Profil member.
+- Role member/admin/super admin.
+- Proteksi halaman.
+- RLS.
+
+Output: sistem login dan hak akses berfungsi.
+
+## Tahap 3 — Rekening dan administrasi
+
+- Pengajuan rekening.
+- Persetujuan admin.
+- Pembuatan nomor rekening.
+- Dashboard member.
+- Dashboard admin.
+- Realtime status.
+
+Output: proses pembukaan rekening dapat dilakukan dari perangkat berbeda.
+
+## Tahap 4 — Kotak tabungan dan NFC
+
+- Pembuatan identitas kotak.
+- Pengaitan rekening.
+- Penulisan NDEF.
+- Pembacaan NFC.
+- Verifikasi NFC.
+- Pengiriman kotak.
+- Konfirmasi penerimaan member.
+- Aktivasi kotak.
+
+Output: setiap kotak tabungan terhubung dengan rekening yang benar.
+
+## Tahap 5 — Transaksi tabungan
+
+- Setoran.
+- Penarikan.
+- Validasi saldo.
+- Konfirmasi member.
+- Persetujuan admin jika diperlukan.
+- Ledger.
+- Audit log.
+- Idempotency.
+- Realtime update.
+
+Output: transaksi tercatat secara konsisten dan dapat dilacak.
+
+## Tahap 6 — Pengelolaan keuangan
+
+- Target tabungan.
+- Grafik.
+- Laporan.
+- Rekonsiliasi saldo fisik.
+- Riwayat transaksi.
+- Ekspor PDF dan CSV.
+
+Output: member dapat mengelola perkembangan tabungannya.
+
+## Tahap 7 — Pengujian dan deployment
+
+- Pengujian multi-user.
+- Pengujian multi-admin.
+- Pengujian keamanan.
+- Pengujian transaksi.
+- Pengujian NFC.
+- Pengujian RLS.
+- Pengujian Realtime.
+- Build production.
+- Deployment Vercel.
+
+Output: aplikasi siap diuji dalam lingkungan produksi.
+
+---
+
+# 18. SKENARIO PENGUJIAN WAJIB
+
+Jangan menyatakan proyek selesai sebelum skenario berikut berhasil.
+
+### Skenario A — Member baru
+
+1. Member A mendaftar.
+2. Member A melengkapi profil.
+3. Member A mengajukan rekening.
+4. Admin menerima pengajuan secara realtime.
+5. Admin menyetujui.
+6. Member A melihat nomor rekening.
+
+### Skenario B — Persiapan kotak tabungan
+
+1. Admin membuat kotak.
+2. Admin menghubungkan kotak ke rekening Member A.
+3. Admin menulis NFC.
+4. Sistem membaca ulang tag.
+5. Sistem memverifikasi tag.
+6. Admin mengirim kotak.
+7. Member A menerima kotak.
+8. Member A melakukan scan NFC.
+9. Member A mengonfirmasi penerimaan.
+10. Kotak berubah menjadi aktif.
+
+### Skenario C — Setoran
+
+1. Member A melakukan scan NFC.
+2. Sistem mengenali rekening Member A.
+3. Member A memasukkan nominal.
+4. Member A mengonfirmasi setoran fisik.
+5. Backend memproses transaksi.
+6. Saldo pembukuan berubah.
+7. Admin melihat transaksi baru.
+8. Riwayat member diperbarui.
+9. Audit log tercatat.
+
+### Skenario D — Penarikan
+
+1. Member A melakukan scan NFC.
+2. Member A memasukkan nominal penarikan.
+3. Backend memvalidasi saldo.
+4. Member mengonfirmasi pengambilan uang.
+5. Sistem memproses transaksi.
+6. Saldo berubah.
+7. Riwayat diperbarui.
+
+### Skenario E — Keamanan
+
+1. Member A mencoba membuka rekening Member B.
+2. Sistem menolak akses.
+3. Member A mencoba menggunakan kotak Member B.
+4. Sistem menolak.
+5. Member A mencoba mengubah saldo dari browser.
+6. Backend menolak.
+7. Member mencoba membuka halaman admin.
+8. Sistem menolak.
+9. Admin melakukan perubahan data.
+10. Audit log mencatat aktivitas.
+
+### Skenario F — Realtime
+
+Gunakan minimal dua akun member dan dua sesi admin pada perangkat/browser berbeda.
+
+Pastikan:
+- Tidak ada data antar-member yang bocor.
+- Status transaksi diperbarui tanpa refresh.
+- Notifikasi muncul secara realtime.
+- Tidak terjadi transaksi ganda.
+- Tidak terjadi saldo yang tertimpa akibat proses bersamaan.
+
+---
+
+# 19. STANDAR KUALITAS
+
+Aplikasi harus memenuhi standar:
+
+- Modular.
+- Maintainable.
+- Responsive.
+- Realtime.
+- Aman.
+- Multi-user.
+- Multi-admin.
+- Database terpusat.
+- Validasi backend.
+- Audit trail.
+- Tidak bergantung pada localStorage.
+- Tidak ada tombol simulasi yang mengaku melakukan operasi sungguhan.
+- Tidak ada data sensitif di tag NFC.
+- Tidak ada manipulasi saldo dari frontend.
+
+Semua proses penting harus memiliki loading state, success state, error state, dan feedback yang jelas.
+
+---
+
+# 20. HASIL AKHIR YANG HARUS DIKIRIMKAN
+
+Setelah pekerjaan selesai, berikan:
+
+1. Source code React + Vite.
+2. Struktur folder modular.
+3. SQL migration lengkap.
+4. RLS policies.
+5. Database functions/RPC.
+6. Supabase Edge Functions jika digunakan.
+7. Sistem autentikasi dan role.
+8. Sistem realtime.
+9. Sistem NFC NDEF.
+10. Sistem rekening.
+11. Sistem kotak tabungan.
+12. Sistem setor dan tarik.
+13. Sistem laporan keuangan.
+14. Audit log.
+15. `.env.example`.
+16. README instalasi dan deployment.
+17. Dokumentasi penggunaan NFC.
+18. Dokumentasi alur member dan admin.
+19. Hasil pengujian.
+20. Daftar fitur yang belum selesai jika masih ada.
+
+Jangan hanya memberikan potongan kode atau contoh implementasi. Kerjakan perubahan langsung pada proyek.
+
+---
+
+# INSTRUKSI PENUTUP UNTUK ANTIGRAVITY
+
+Mulailah dengan mempelajari seluruh file `Narayan_Virtual_Bank_Tahap_7_1_Portal_Fix.html`.
+
+Jangan langsung menulis ulang aplikasi dari nol.
+
+Buat laporan audit singkat, feature map, arsitektur migrasi, dan daftar risiko sebelum mengubah kode.
+
+Setelah itu, kerjakan secara bertahap dengan menjaga seluruh fitur lama yang masih relevan.
+
+Prioritas tertinggi adalah:
+
+1. Sistem benar-benar realtime.
+2. Data member tersimpan dalam database bersama.
+3. Member hanya dapat mengakses rekeningnya sendiri.
+4. Admin memiliki kontrol dan otorisasi yang benar.
+5. Kotak tabungan fisik dapat ditautkan dengan rekening melalui NFC NDEF.
+6. Member dapat mengonfirmasi penerimaan dan menggunakan kotak untuk melaporkan setor atau tarik.
+7. Seluruh transaksi tercatat dalam ledger dan audit log.
+8. Member dapat memantau serta mengelola keuangan pribadinya.
+9. Kantor virtual 3D tetap dipertahankan dan terintegrasi dengan backend.
+
+**Visi akhir: Narayan Virtual Bank menjadi platform tabungan mandiri yang menggabungkan sistem administrasi bank konvensional, rekening digital, kotak tabungan fisik di rumah, teknologi NFC, pencatatan keuangan realtime, dan kantor virtual 3D.**
+
+Pastikan setiap fitur yang dinyatakan selesai benar-benar bekerja, bukan sekadar tampak bekerja pada antarmuka.

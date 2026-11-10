@@ -1,0 +1,22 @@
+{
+  "name": "narayan-virtual-smart-bank",
+  "version": "7.1.0",
+  "private": true,
+  "description": "Narayan Virtual Bank — Realtime Self-Saving NFC System Tahap 7.1",
+  "scripts": {
+    "dev": "npm --prefix app run dev",
+    "build": "npm --prefix app run build",
+    "preview": "npm --prefix app run preview"
+  },
+  "keywords": [
+    "react",
+    "vite",
+    "threejs",
+    "supabase",
+    "nfc",
+    "web-nfc",
+    "smart-bank"
+  ],
+  "author": "Narayan Virtual Bank Team",
+  "license": "ISC"
+}

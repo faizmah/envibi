@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#17212d">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Narayan Virtual Bank — Tahap 7 · Member Journey & Mobile First</title>
+<style>
+:root{--bg:#17212d;--glass:rgba(24,35,49,.86);--glass2:rgba(21,31,44,.97);--fg:#edf2f7;--mut:#9eacbb;--bd:rgba(220,230,240,.13);--acc:#c39a58;--acc2:#e1bd7b;--accfg:#17212d;--sec:rgba(220,230,240,.08);--sh:0 12px 36px rgba(0,0,0,.38);--r:16px}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){color-scheme:dark}}
+:root[data-theme="dark"]{color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:500 13px/1.45 Inter,"Segoe UI",system-ui,-apple-system,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:var(--r)}
+
+/* HUD ringkas (selalu terlihat, kecil) */
+#hud{position:fixed;top:14px;left:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:10;max-width:calc(100vw - 28px)}
+.brand{display:flex;align-items:center;gap:9px;padding:8px 14px;font-weight:800;font-size:14px}
+.logo{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--acc2),var(--acc));display:grid;place-items:center;color:#fff;font-size:12px}
+.brand small{font-weight:800;color:var(--accfg);background:var(--acc);padding:2px 8px;border-radius:99px;font-size:11px}
+.chip{display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:99px;white-space:nowrap}
+.chip span{color:var(--mut);font-size:12px}
+.chip b{font-weight:800}
+.chip.mis{max-width:360px}
+.chip.mis b{overflow:hidden;text-overflow:ellipsis}
+.chip.hot{background:linear-gradient(135deg,#ff9a5a,#ff5e8a);border-color:transparent;color:#fff}
+.chip.hot span{color:#ffffffcc}
+
+/* Dock bawah + submenu berkelompok */
+#dock{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:7px;z-index:12;border-radius:22px}
+.item{position:relative}
+.dbtn{display:flex;align-items:center;gap:8px;padding:10px 18px;border:0;border-radius:15px;background:transparent;font-weight:700;cursor:pointer;transition:background .15s,color .15s;position:relative}
+.dbtn:hover{background:var(--sec)}
+.item.open>.dbtn{background:var(--acc);color:var(--accfg)}
+.dbtn .ic{font-size:16px}
+.badge{position:absolute;top:7px;right:9px;width:9px;height:9px;border-radius:50%;background:#ff4d4f;box-shadow:0 0 0 2px var(--glass2);display:none;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{transform:scale(1.35)}}
+.pop{position:absolute;bottom:calc(100% + 16px);left:50%;min-width:250px;padding:12px;background:var(--glass2);opacity:0;pointer-events:none;transform:translate(-50%,8px) scale(.97);transition:opacity .16s,transform .16s}
+.item.open>.pop{opacity:1;pointer-events:auto;transform:translate(-50%,0) scale(1)}
+.pop h5{margin:12px 4px 6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--mut)}
+.pop h5:first-child{margin-top:0}
+.row{display:flex;gap:6px;flex-wrap:wrap}
+.mb{flex:1 1 auto;padding:9px 12px;border:1px solid var(--bd);border-radius:11px;background:var(--sec);font-weight:700;cursor:pointer;transition:border-color .12s,transform .08s;white-space:nowrap}
+.mb:hover{border-color:var(--acc)}
+.mb:active{transform:scale(.97)}
+.mb.on,.mb.pri{background:var(--acc);color:var(--accfg);border-color:transparent}
+.mb.full{flex-basis:100%}
+.help{margin:0;padding:0 4px;list-style:none;color:var(--mut);font-size:12px}
+.help li{margin:3px 0}
+.help kbd{background:var(--sec);border:1px solid var(--bd);border-radius:6px;padding:0 6px;font:inherit;font-weight:700;color:var(--fg)}
+
+/* Dashboard bertab: tersembunyi default, buka lewat submenu */
+#dashW{position:fixed;top:72px;right:14px;width:min(510px,calc(100vw - 28px));max-height:calc(100vh - 170px);display:flex;flex-direction:column;z-index:11;background:var(--glass2);opacity:0;pointer-events:none;transform:translateX(26px);transition:opacity .2s,transform .2s}
+#dashW.open{opacity:1;pointer-events:auto;transform:none}
+.dh{display:flex;align-items:center;gap:8px;padding:10px 10px 0 10px}
+.tabs{display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;background:var(--sec);padding:3px;border-radius:12px;scrollbar-width:thin}
+.tab{flex:0 0 auto;white-space:nowrap;border:0;background:transparent;color:var(--mut);font-weight:700;padding:7px 8px;border-radius:9px;cursor:pointer}
+.tab.on{background:var(--acc);color:var(--accfg)}
+.x{border:0;background:var(--sec);width:32px;height:32px;border-radius:10px;cursor:pointer;font-size:15px}
+.x:hover{background:var(--bd)}
+.pane{padding:12px;overflow:auto}
+.kpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.kpi div{background:var(--sec);border-radius:11px;padding:8px 10px}
+.kpi span{display:block;font-size:11px;color:var(--mut)}
+.kpi b{font-size:14px}
+h4{margin:14px 0 6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--mut)}
+.stk{display:grid;grid-template-columns:78px 1fr 26px;gap:8px;align-items:center;margin:6px 0}
+.bar{height:8px;border-radius:9px;background:var(--sec);overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:9px;transition:width .3s}
+.bar i.lo{background:linear-gradient(90deg,#ff5e5e,#ff9a5a)}
+.stk em{font-size:9.5px;font-style:normal;background:var(--acc);color:var(--accfg);padding:1px 5px;border-radius:6px;margin-left:3px}
+.alert{background:rgba(255,77,79,.15);color:#e8383b;padding:7px 10px;border-radius:10px;margin-bottom:6px;font-weight:700}
+.ok{color:var(--acc);font-weight:700}
+.ord{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--bd)}
+.ord small{color:var(--mut);text-align:right}
+.tagk{font-size:10px;padding:1px 7px;border-radius:99px;background:var(--sec);margin-left:5px}
+.logl{padding:6px 0;border-bottom:1px solid var(--bd)}
+
+.status{display:inline-flex;align-items:center;border-radius:99px;padding:3px 8px;background:var(--sec);font-size:10px;font-weight:800;color:var(--mut)}
+.status.good{background:rgba(46,204,113,.16);color:#65d69a}.status.wait{background:rgba(241,196,15,.16);color:#e8c75b}.status.bad{background:rgba(231,76,60,.16);color:#ff8a80}
+.taskcard{padding:9px 0;border-bottom:1px solid var(--bd)}.taskhead{display:flex;justify-content:space-between;gap:8px;align-items:center}.taskmeta{font-size:11px;color:var(--mut);margin-top:4px;line-height:1.5}
+.action{border:1px solid var(--bd);background:var(--sec);padding:7px 10px;border-radius:9px;font-weight:800;cursor:pointer}.action.good{background:#2d9c68;color:white;border-color:transparent}.action.bad{background:#a94141;color:white;border-color:transparent}
+.kpi{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi b{font-size:15px}.field{width:100%;border:1px solid var(--bd);background:var(--sec);color:var(--fg);padding:9px;border-radius:9px;font:inherit;margin:4px 0 8px}.field option{background:#17212d;color:#fff}
+@media(max-width:700px){#hud{top:7px;left:7px;gap:5px;max-width:calc(100vw - 14px)}.brand{padding:7px 9px;font-size:12px}.chip{padding:6px 9px}.chip span{font-size:10px}.chip b{font-size:11px}#dock{bottom:max(8px,env(safe-area-inset-bottom));width:calc(100vw - 14px);justify-content:center;gap:2px;padding:5px}.dbtn{padding:10px 9px;font-size:11px;gap:5px}.dbtn .ic{font-size:15px}.pop{min-width:230px;max-width:calc(100vw - 24px)}#dashW{top:66px;right:7px;left:7px;width:auto;max-height:calc(100vh - 132px)}#tip{bottom:72px;max-width:90vw;text-align:center;font-size:10px}.pane{padding:10px}}
+
+/* Tips singkat saat pertama dibuka */
+#tip{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);padding:8px 16px;border-radius:99px;z-index:9;pointer-events:none;color:var(--mut);transition:opacity .6s}
+#tip.gone{opacity:0}
+
+/* Balon ucapan dan label nama di dunia 3D */
+.bub,.tag{position:fixed;top:0;left:0;display:none;pointer-events:none;z-index:5;white-space:nowrap}
+.bub{background:#fff;color:#222;border-radius:12px;box-shadow:0 4px 14px #0003;padding:6px 10px;font-size:12px;white-space:normal;width:max-content;max-width:190px}
+.tag{font-size:11px;font-weight:700;color:#fff;padding:2px 9px;border-radius:99px;box-shadow:0 2px 6px #0003}
+
+/* Tahap 7 · Member journey + intelligent mobile-first UI */
+#memberLaunch{position:fixed;right:16px;bottom:88px;z-index:60;pointer-events:auto;touch-action:manipulation;border:0;border-radius:999px;padding:13px 17px;background:linear-gradient(135deg,#e1bd7b,#bd8d48);color:#17212d;font-weight:900;box-shadow:0 10px 30px #0006;display:flex;align-items:center;gap:8px;cursor:pointer}
+#memberShell{position:fixed;inset:0;z-index:50;background:rgba(5,12,20,.78);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:14px}
+#memberShell.show{display:flex}
+.memberApp{width:min(1040px,100%);height:min(850px,100%);background:#f3f6f8;color:#1d2b38;border-radius:24px;overflow:hidden;display:grid;grid-template-rows:auto 1fr;box-shadow:0 24px 80px #0008}
+.memberTop{background:#172b3a;color:#f5f7fa;padding:15px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.memberTop strong{font-size:16px;letter-spacing:.03em}.memberTop small{display:block;color:#b8c7d3;font-size:11px}.memberTop button{border:1px solid #ffffff35;background:#ffffff12;color:white;border-radius:12px;padding:9px 12px}
+.memberBody{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:0}
+.memberNav{background:#e8eef2;padding:16px;display:flex;flex-direction:column;gap:7px}.memberNav button{border:0;background:transparent;color:#33495a;text-align:left;padding:12px;border-radius:12px;font-weight:750}.memberNav button.active{background:#d3e9e1;color:#17684e}.memberNav .navhint{margin-top:auto;color:#6e7e8b;font-size:11px;line-height:1.5}
+.memberContent{overflow:auto;padding:clamp(14px,3vw,28px)}
+.mHero{background:linear-gradient(125deg,#18394b,#286b65);color:white;border-radius:18px;padding:22px;margin-bottom:16px}.mHero h2{font-size:clamp(20px,4vw,28px);margin:0 0 7px}.mHero p{margin:0;color:#d5e7e5;max-width:650px}
+.mGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.mCard{background:white;border:1px solid #dfe7eb;border-radius:16px;padding:15px;box-shadow:0 4px 16px #18394b0b}.mCard h3{margin:0 0 7px;font-size:15px}.mCard p,.mMuted{color:#687986;font-size:12px;line-height:1.55}.mAction{border:0;background:#176b55;color:white;padding:11px 14px;border-radius:11px;font-weight:800;cursor:pointer}.mAction.alt{background:#e7f0ed;color:#176b55}.mAction.warn{background:#fff0dd;color:#8a5715}.mField{display:block;width:100%;margin:6px 0 12px;padding:12px;border:1px solid #d6e0e6;border-radius:11px;background:white;color:#20313e;font:inherit}.mLabel{font-size:12px;font-weight:800;color:#405564}.mStatus{display:inline-flex;border-radius:99px;padding:4px 9px;font-size:10px;font-weight:900;background:#e8eef2;color:#526573}.mStatus.good{background:#ddf4e9;color:#176b4f}.mStatus.wait{background:#fff1d7;color:#946015}.mStatus.bad{background:#fde5e2;color:#a33e35}.mSteps{display:flex;gap:5px;flex-wrap:wrap;margin:14px 0}.mSteps span{background:#e8eef2;color:#60717e;border-radius:99px;padding:6px 9px;font-size:10px;font-weight:800}.mSteps span.done{background:#d9f1e5;color:#176b4f}.mRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.mList{display:grid;gap:9px}.mEmpty{padding:25px;text-align:center;color:#71818c;background:#fff;border:1px dashed #cbd7df;border-radius:15px}.mCallout{padding:12px;border-radius:12px;background:#e5f1ee;color:#255e51;font-size:12px;line-height:1.5;margin:10px 0}.mDanger{background:#fff0ed;color:#9b443a}
+@media(max-width:700px){#memberLaunch{right:10px;bottom:calc(82px + env(safe-area-inset-bottom));padding:12px 14px;font-size:12px}#memberShell{padding:0;align-items:stretch}.memberApp{height:100%;width:100%;border-radius:0;grid-template-rows:auto 1fr}.memberTop{padding:calc(10px + env(safe-area-inset-top)) 14px 10px}.memberBody{display:flex;flex-direction:column}.memberNav{order:2;flex-direction:row;overflow-x:auto;padding:7px;gap:5px;border-top:1px solid #d6e0e6}.memberNav button{white-space:nowrap;text-align:center;padding:11px 13px;font-size:11px;flex:0 0 auto}.memberNav .navhint{display:none}.memberContent{order:1;flex:1;padding:14px 12px calc(18px + env(safe-area-inset-bottom))}.mGrid{grid-template-columns:1fr}.mHero{padding:18px}.mCard{padding:14px}.mAction{min-height:44px}.mField{font-size:16px;min-height:44px}}
+
+</style>
+</head>
+<body>
+<div id="hud">
+  <div class="glass brand"><span class="logo">N</span>NARAYAN <small>VIRTUAL BANK</small></div>
+  <div class="glass chip"><span>Staf aktif</span><b id="hStaff">0 / 8</b></div>
+  <div class="glass chip"><span>Tugas aktif</span><b id="hTasks">0</b></div>
+  <div class="glass chip"><span>Menunggu</span><b id="hWait">0</b></div>
+  <div class="glass chip"><span>Bulan simulasi</span><b id="hMonth">0</b></div>
+</div>
+<section id="dashW" class="glass" aria-label="Dashboard Operasional">
+  <div class="dh"><div class="tabs">
+    <button class="tab on" data-tab="overview">Ringkasan</button>
+    <button class="tab" data-tab="tasks">Tugas</button>
+    <button class="tab" data-tab="approvals">Persetujuan <i class="badge" id="bdg"></i></button>
+    <button class="tab" data-tab="staffv">Staf</button>
+    <button class="tab" data-tab="bankv">Bank Virtual</button>
+    <button class="tab" data-tab="customersv">Nasabah</button>
+    <button class="tab" data-tab="financev">Keuangan</button>
+    <button class="tab" data-tab="settingsv">Pengaturan</button>
+    <button class="tab" data-tab="productsv">Produk</button>
+    <button class="tab" data-tab="economyv">Ekonomi</button>
+    <button class="tab" data-tab="logv">Log</button>
+  </div><button class="x" id="dashX" aria-label="Tutup dashboard">✕</button></div>
+  <div class="pane" id="overview" data-pane="overview"></div>
+  <div class="pane" id="tasks" data-pane="tasks" hidden></div>
+  <div class="pane" id="approvals" data-pane="approvals" hidden></div>
+  <div class="pane" id="staffv" data-pane="staffv" hidden></div>
+  <div class="pane" id="bankv" data-pane="bankv" hidden>
+    <div id="bankApp"></div>
+  </div>
+  <div class="pane" id="customersv" data-pane="customersv" hidden></div>
+  <div class="pane" id="financev" data-pane="financev" hidden></div>
+  <div class="pane" id="settingsv" data-pane="settingsv" hidden></div>
+  <div class="pane" id="productsv" data-pane="productsv" hidden></div>
+  <div class="pane" id="economyv" data-pane="economyv" hidden></div>
+  <div class="pane" id="logv" data-pane="logv" hidden></div>
+</section>
+<div id="tip" class="glass">Seret = orbit 360° · Shift + seret = geser · Cubit/gulir = zoom · F = fullscreen · D = dashboard</div>
+<nav id="dock" class="glass">
+  <div class="item"><button class="dbtn"><span class="ic">🏦</span>Operasional</button><div class="pop glass">
+    <h5>Permintaan layanan</h5>
+    <label for="serviceType">Jenis layanan</label><select class="field" id="serviceType"><option>Transfer</option><option>Setoran</option><option>Penarikan</option><option>Pembukaan rekening</option><option>Konsultasi</option></select>
+    <label for="serviceAmount">Nominal simulasi (Rp)</label><input class="field" id="serviceAmount" type="number" min="0" step="50000" value="750000">
+    <div class="row"><button class="mb pri full" id="bAdd">＋ Datangkan nasabah</button></div>
+    <h5>Bank virtual</h5><div class="row"><button class="mb full" id="bBankDash">🏦 Rekening & transaksi</button></div>
+    <h5>Produk lanjutan</h5><div class="row"><button class="mb full" id="bProducts">💼 Deposito, pinjaman & kartu</button><button class="mb full" id="bEconomy">📈 Ekonomi & ekspansi</button></div>
+    <h5>Simulasi</h5><div class="row"><button class="mb full" id="bAuto">Simulasi otomatis: OFF</button></div>
+    <h5>Panel</h5><div class="row"><button class="mb full" id="bOpenDash">📋 Buka dashboard operasional</button></div>
+  </div></div>
+  <div class="item"><button class="dbtn"><span class="ic">🏢</span>Lantai</button><div class="pop glass"><h5>Tampilkan lantai</h5><div class="row"><button class="mb on" data-fl="all">Semua</button><button class="mb" data-fl="1">L1</button><button class="mb" data-fl="2">L2</button><button class="mb" data-fl="3">L3</button><button class="mb" id="flL4" data-fl="4" hidden>L4</button></div><ul class="help"><li>L1 Layanan · L2 Operasional · L3 Digital · L4 Produk (setelah dibangun)</li><li>Tombol 0 / 1 / 2 / 3 / 4 di keyboard</li></ul></div></div>
+  <div class="item"><button class="dbtn"><span class="ic">🎥</span>Kamera</button><div class="pop glass">
+    <h5>Mode kursor</h5><div class="row"><button class="mb on" id="tOrbit">Orbit</button><button class="mb" id="tPan">Geser</button></div>
+    <h5>Sudut pandang</h5><div class="row"><button class="mb" data-v="top">Atas</button><button class="mb" data-v="front">Depan</button><button class="mb" data-v="left">Kiri</button><button class="mb" data-v="iso">Iso</button></div>
+    <h5>Proyeksi</h5><div class="row"><button class="mb full" id="tProj">Perspektif</button></div>
+  </div></div>
+  <div class="item"><button class="dbtn"><span class="ic">📊</span>Dashboard</button><div class="pop glass">
+    <h5>Monitoring</h5><div class="row"><button class="mb full" data-dash="overview">Ringkasan operasional</button><button class="mb full" data-dash="tasks">Antrean tugas</button><button class="mb full" data-dash="approvals">Persetujuan Owner</button><button class="mb full" data-dash="staffv">Status staf</button><button class="mb full" data-dash="bankv">Rekening & transaksi</button><button class="mb full" data-dash="customersv">Data nasabah</button><button class="mb full" data-dash="financev">Keuangan & jurnal</button><button class="mb full" data-dash="settingsv">Pengaturan bank</button><button class="mb full" data-dash="productsv">Produk: deposito, pinjaman, kartu</button><button class="mb full" data-dash="economyv">Ekonomi & kinerja staf</button><button class="mb full" data-dash="logv">Log aktivitas</button></div>
+    <div class="row"><button class="mb full" id="bHideDash">Sembunyikan dashboard</button></div>
+  </div></div>
+  <div class="item"><button class="dbtn"><span class="ic">⚙️</span>Tampilan</button><div class="pop glass"><h5>Layar</h5><div class="row"><button class="mb pri full" id="bFs">⛶ Fullscreen</button></div><h5>Bantuan</h5><ul class="help"><li>Orbit: seret layar</li><li>Geser: Shift + seret</li><li>Zoom: gulir / cubit</li><li>F fullscreen · D dashboard · Esc tutup menu</li></ul></div></div>
+</nav>
+
+<button id="memberLaunch" type="button" aria-label="Buka layanan member"
+ onclick="if(window.__nvbMemberOpen){window.__nvbMemberOpen()}else{const s=document.getElementById('memberShell');s.classList.add('show');s.setAttribute('aria-hidden','false');const c=document.getElementById('memberContent');if(c&&!c.innerHTML.trim())c.innerHTML='<div class=&quot;mCard&quot;><h3>Portal Member sedang dimuat</h3><p>Jika layar ini tidak berubah, muat ulang halaman dan coba kembali.</p></div>'}">
+ <span>🏦</span> Member Portal
+</button>
+<div id="memberShell" aria-hidden="true"><section class="memberApp" role="dialog" aria-modal="true" aria-label="Narayan Virtual Bank Member Portal">
+ <header class="memberTop"><div><strong>NARAYAN VIRTUAL BANK</strong><small>Member experience · layanan digital & virtual branch</small></div><div class="mRow"><span id="memberIdentity" style="font-size:11px;color:#c8d7df">Mode tamu</span><button id="memberClose" aria-label="Tutup portal">✕</button></div></header>
+ <div class="memberBody"><nav class="memberNav" aria-label="Navigasi member"><button data-mtab="home" class="active">⌂ Beranda</button><button data-mtab="services">▦ Layanan</button><button data-mtab="status">◷ Status</button><button data-mtab="admin">▣ Admin</button><div class="navhint">Antarmuka menyesuaikan perangkat. Gunakan data simulasi, bukan data pribadi atau rekening sungguhan.</div></nav><main id="memberContent" class="memberContent"></main></div>
+ </section></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const W=20,D=10,Z0=-12;
+const mkGrid=()=>Array.from({length:D-Z0},()=>Array(W).fill(false));let blocked=mkGrid();const grids={1:blocked,2:mkGrid(),3:mkGrid()};
+const setB=(x,z)=>{if(x>=0&&x<W&&z>=Z0&&z<D)blocked[z-Z0][x]=true};const setBF=(f,x,z)=>{if(x>=0&&x<W&&z>=Z0&&z<D)grids[f][z-Z0][x]=true};
+const MOB=matchMedia('(pointer:coarse)').matches||innerWidth<700;let PR=MOB?1:Math.min(devicePixelRatio,1.5);
+function fatal(m){document.body.insertAdjacentHTML('beforeend','<div style="position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center;background:#17212d;color:#edf2f7;z-index:99;font:600 15px system-ui">'+m+'</div>')}
+if(typeof THREE==='undefined'){fatal('Pustaka 3D (Three.js) gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.');throw new Error('THREE missing')}
+let renderer;try{renderer=new THREE.WebGLRenderer({antialias:!MOB,alpha:false})}catch(e){fatal('WebGL tidak tersedia di browser ini. Coba Chrome terbaru atau aktifkan akselerasi perangkat keras.');throw e}
+renderer.setPixelRatio(PR);document.body.appendChild(renderer.domElement);const cv=renderer.domElement;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x17212d);
+const cam=new THREE.PerspectiveCamera(50,1,.1,1000);
+scene.add(new THREE.HemisphereLight(0xeaf2ff,0x59616d,1.1));
+const sun=new THREE.DirectionalLight(0xffe5bd,.85);sun.position.set(5,14,8);scene.add(sun);
+function pix(n,draw,rx=1,ry=1){const c=document.createElement('canvas');c.width=c.height=n;draw(c.getContext('2d'));const t=new THREE.CanvasTexture(c);t.magFilter=t.minFilter=THREE.NearestFilter;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);return t}
+const mat=c=>new THREE.MeshLambertMaterial({color:c});
+function box(w,h,d,m,x,y,z,p=scene){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);p.add(o);return o}
+function textPlane(txt,w,h,bg,x,y,z,P=scene){const c=document.createElement('canvas');c.width=512;c.height=128;const g=c.getContext('2d');g.fillStyle=bg;g.fillRect(0,0,c.width,c.height);g.fillStyle='#fff';g.font='bold 42px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,256,66);const t=new THREE.CanvasTexture(c);t.magFilter=THREE.LinearFilter;const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,transparent:true}));m.position.set(x,y,z);P.add(m);return m}
+const floorMat=new THREE.MeshLambertMaterial({map:pix(2,g=>{g.fillStyle='#4b5661';g.fillRect(0,0,2,2);g.fillStyle='#56616c';g.fillRect(0,0,1,1);g.fillRect(1,1,1,1)},W/2,11)});
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(W,22),floorMat);floor.rotation.x=-Math.PI/2;floor.position.set(10,0,-1);scene.add(floor);
+const wall=mat('#263544'),trim=mat('#b38a50'),wood=mat('#795d43'),dark=mat('#26313c'),glass=mat('#7295a8'),seat=mat('#526c7b');
+// Dinding perimeter dan pembatas zona
+box(20,.22,.35,wall,10,.11,-12);box(20,.22,.35,wall,10,.11,10);
+box(.3,1,22,wall,-.15,.5,-1);box(.3,1,22,wall,20.15,.5,-1);
+box(20,.12,.18,trim,10,.08,0);box(.18,.12,12,trim,10,.08,-6);
+// Papan nama utama dan area lantai
+box(8,1.1,.18,mat('#142331'),10,2.15,-11.72);textPlane('NARAYAN VIRTUAL BANK',7.5,.72,'#142331',10,2.18,-11.60);
+textPlane('CUSTOMER LOBBY',4,.5,'#344b5b',10,1.85,9.55);
+textPlane('CUSTOMER SERVICE',4,.5,'#344b5b',5,1.8,-2.25);
+textPlane('BRANKAS',2,.4,'#344b5b',10,1.75,-11.2);
+textPlane('TELLER',2,.45,'#344b5b',14,1.7,2.55);
+// Resepsionis dan counter layanan
+function counter(x,z,w,label){box(w,.72,.85,wood,x,.36,z);box(w,.12,.88,trim,x,.78,z);box(.42,.28,.06,dark,x,.98,z-.2);textPlane(label,Math.max(1.4,w-.2),.28,'#344b5b',x,1.24,z+.48)}
+counter(5,6,3,'RESEPSIONIS');counter(5,-3,3,'CUSTOMER SERVICE');counter(13,3,5,'TELLER SERVICE');
+// Meja operasi di belakang
+function officeDesk(x,z,label,P=scene){box(1.9,.62,.82,wood,x,.31,z,P);box(.5,.32,.06,dark,x,.82,z-.2,P);box(.44,.24,.025,glass,x,.83,z-.24,P);textPlane(label,1.8,.26,'#344b5b',x,1.12,z+.46,P)}
+// ===== TAHAP 5: DUNIA BANK 3D — 3 lantai, lift, ruangan, lampu Owner =====
+const FH=4.2,fl={1:scene,2:new THREE.Group(),3:new THREE.Group()};fl[2].position.y=FH;fl[3].position.y=FH*2;scene.add(fl[2],fl[3]);
+const glassT=new THREE.MeshLambertMaterial({color:'#7fb3c8',transparent:true,opacity:.28,depthWrite:false});
+const slabM=new THREE.MeshLambertMaterial({map:floorMat.map,transparent:true,opacity:.5,depthWrite:false});
+function mkFloor(f,title){const g=fl[f],p=new THREE.Mesh(new THREE.PlaneGeometry(W,22),slabM);p.rotation.x=-Math.PI/2;p.position.set(10,.01,-1);g.add(p);
+  box(20,.22,.35,wall,10,.11,-12,g);box(20,.22,.35,wall,10,.11,10,g);box(.3,1,22,wall,-.15,.5,-1,g);box(.3,1,22,wall,20.15,.5,-1,g);
+  box(8,1.1,.18,mat('#142331'),10,2.15,-11.72,g);textPlane(title,7.5,.62,'#142331',10,2.18,-11.6,g)}
+mkFloor(2,'LANTAI 2 · OPERATIONAL MANAGEMENT');mkFloor(3,'LANTAI 3 · DIGITAL BANKING & SUPPORT');
+for(const f of [1,2,3]){box(.9,.02,.9,trim,18.5,.02,8.5,fl[f]);textPlane('LIFT',1.1,.28,'#344b5b',18.5,1.5,9.65,fl[f])}
+const cabin=box(1,2.2,1,new THREE.MeshLambertMaterial({color:'#9fb7c4',transparent:true,opacity:.3,depthWrite:false}),18.5,1.1,8.5);
+// Lantai 1: bangku antrean, brankas, ruang konsultasi
+for(const [x,z] of [[9,7],[10,7],[11,7],[9,8],[10,8],[11,8]]){box(.85,.2,.6,seat,x+.5,.2,z+.5);box(.85,.42,.1,seat,x+.5,.5,z+.78)}
+box(2.4,1.5,.3,mat('#4b5661'),10,.75,-11.5);box(.5,.5,.1,trim,10,.8,-11.3);
+box(.05,1.6,3,glassT,1,.8,-10);box(.05,1.6,3,glassT,5,.8,-10);box(1.8,.5,.9,wood,3,.25,-9.5);textPlane('KONSULTASI',2,.3,'#344b5b',3,1.2,-8.4);
+// Lantai 2: Operasional, rapat, ruang Owner
+const g2=fl[2],g3=fl[3];
+officeDesk(3,-8,'KEPALA OPERASIONAL',g2);officeDesk(8,-8,'VERIFIKASI',g2);officeDesk(18,-3,'AUDIT',g2);
+box(3,.5,1.4,wood,10.5,.25,-2.5,g2);textPlane('RUANG RAPAT',2,.3,'#344b5b',10.5,1.1,-1.7,g2);
+box(6,1.6,.05,glassT,16,.8,-6.5,g2);box(.05,1.6,4.5,glassT,13,.8,-9,g2);officeDesk(16,-9,'OWNER',g2);
+const ownerLamp=new THREE.Mesh(new THREE.SphereGeometry(.14,12,10),new THREE.MeshBasicMaterial({color:0x2ecc71}));ownerLamp.position.set(16,1.5,-9);g2.add(ownerLamp);
+[[3,-8],[8,-8],[18,-3],[9,-3],[10,-3],[11,-3]].forEach(([x,z])=>setBF(2,x,z));for(let x=13;x<=19;x++)for(let z=-11;z<=-7;z++)setBF(2,x,z);
+// Lantai 3: transfer digital, keuangan, ruang server
+officeDesk(3,-8,'KEAMANAN',g3);officeDesk(7,-8,'DATA NASABAH',g3);officeDesk(12,-8,'TRANSFER DIGITAL',g3);officeDesk(16,-8,'KEUANGAN',g3);
+const leds=[];for(let i=0;i<4;i++){const x=1.2+i*.9;box(.75,1.9,.8,dark,x,.95,-10.6,g3);for(let k=0;k<3;k++)leds.push(box(.5,.06,.02,new THREE.MeshBasicMaterial({color:k%2?0x2ecc71:0x4aa3ff}),x,.6+k*.45,-10.18,g3))}
+textPlane('RUANG SERVER',2.8,.3,'#344b5b',2.7,2.15,-10.1,g3);
+[[3,-8],[7,-8],[12,-8],[16,-8],[1,-11],[2,-11],[3,-11],[4,-11]].forEach(([x,z])=>setBF(3,x,z));
+const qa={t:0,n:0};
+
+// Ruang tunggu dan tanaman
+for(const [x,z] of [[2,3],[4,3],[6,3],[2,1],[4,1]]){box(.85,.22,.55,seat,x,.28,z);box(.85,.5,.12,seat,x,.62,z-.22)}
+for(const [x,z] of [[1,-5],[18,5],[1,7],[18,-10]]){box(.55,.45,.55,mat('#7b6045'),x,.22,z);const stem=box(.12,.8,.12,mat('#4b8a68'),x,.75,z);box(.7,.35,.7,mat('#347a58'),x,1.18,z)}
+// Area akses utama dan garis pandu lantai
+for(let x=7;x<=12;x+=1)box(.025,.012,17,mat('#71808c'),x,.012,-1);
+// Sel-sel furniture yang tidak dapat dilewati
+[[5,6],[4,6],[6,6],[5,-3],[4,-3],[6,-3],[12,3],[13,3],[14,3],[15,3],[2,-10],[3,-10]].forEach(([x,z])=>setB(x,z));
+
+// Karakter chibi: kepala besar, mata besar, pipi merah
+const chars=[];
+function makeChar(o){
+  const g=new THREE.Group(),skin=mat(o.skin),hair=mat(o.hair),shirt=mat(o.shirt);
+  const ft=pix(8,c=>{const r=(x,y,w,h,f)=>{c.fillStyle=f;c.fillRect(x,y,w,h)};
+    r(0,0,8,8,o.skin);r(0,0,8,2,o.hair);r(1,3,2,2,'#2b2b3a');r(5,3,2,2,'#2b2b3a');r(1,3,1,1,'#fff');r(5,3,1,1,'#fff');
+    r(0,5,1,1,'#ff9aa8');r(7,5,1,1,'#ff9aa8');r(3,6,2,1,'#c0392b');r(2,5,1,1,'#c0392b');r(5,5,1,1,'#c0392b')});
+  const hg=new THREE.Group();hg.position.y=1.15;g.add(hg);
+  hg.add(new THREE.Mesh(new THREE.BoxGeometry(.7,.7,.7),[skin,skin,hair,skin,new THREE.MeshLambertMaterial({map:ft}),hair]));
+  box(.76,.14,.76,hair,0,.39,0,hg);box(.76,.4,.12,hair,0,.1,-.32,hg);
+  if(o.hat){const hm=mat(o.hat);box(.8,.16,.8,hm,0,.43,0,hg);box(.5,.05,.3,hm,0,.34,.45,hg)}
+  box(.5,.5,.32,shirt,0,.55,0,g);
+  if(o.apron)box(.42,.36,.02,mat(o.apron),0,.5,.17,g);
+  const limb=(px,py,top,low,h)=>{const p=new THREE.Group();p.position.set(px,py,0);box(.16,h*.7,.16,top,0,-h*.35,0,p);box(.16,h*.3,.16,low,0,-h*.85,0,p);g.add(p);return p};
+  const pants=mat(o.pants),holdG=new THREE.Group();holdG.position.set(0,.62,.4);g.add(holdG);
+  const c={g,hg,holdG,armL:limb(-.33,.78,shirt,skin,.4),armR:limb(.33,.78,shirt,skin,.4),legL:limb(-.12,.3,pants,pants,.3),legR:limb(.12,.3,pants,pants,.3),
+    path:[],res:null,amp:0,rot:0,f:1,by:0,ph:Math.random()*6,held:null,busy:false,role:o.role,name:o.name,home:o.home};
+  c.bub=document.createElement('div');c.bub.className='bub';document.body.appendChild(c.bub);
+  if(o.name){c.tag=document.createElement('div');c.tag.className='tag';c.tag.style.background=o.shirt;c.tag.textContent=o.name+' · '+o.label;document.body.appendChild(c.tag)}
+  scene.add(g);chars.push(c);return c;
+}
+const staff=[
+  makeChar({name:'Sari',label:'Resepsionis',role:'reception',skin:'#f5cba7',hair:'#6e2c00',shirt:'#287d72',pants:'#263544',apron:'#d8c39b',hat:'#b38a50',home:[7,7]}),
+  makeChar({name:'Budi',label:'Customer Service',role:'cs',skin:'#e0ac69',hair:'#222222',shirt:'#347da0',pants:'#263544',apron:'#1b2631',hat:'#347da0',home:[7,-2]}),
+  makeChar({name:'Dodi',label:'Teller',role:'teller',skin:'#c68642',hair:'#3b2f2f',shirt:'#a66b38',pants:'#34495e',hat:'#c39a58',home:[12,4]}),
+  makeChar({name:'Pak Rudi',label:'Kepala Operasional',role:'ops',skin:'#e0ac69',hair:'#999999',shirt:'#6c3483',pants:'#2c3e50',apron:'#c39a58',home:[2,-7]}),
+  makeChar({name:'Dina',label:'Verifikasi',role:'verify',skin:'#f5cba7',hair:'#7d3c98',shirt:'#8e6bb0',pants:'#2d3436',hat:'#c39a58',home:[7,-7]}),
+  makeChar({name:'Eko',label:'Transfer Officer',role:'transfer',skin:'#c68642',hair:'#222222',shirt:'#287d72',pants:'#2d3436',home:[11,-7]}),
+  makeChar({name:'Rina',label:'Finance Officer',role:'finance',skin:'#f5cba7',hair:'#3b2f2f',shirt:'#b7950b',pants:'#2c3e50',apron:'#ecf0f1',home:[15,-7]}),
+  makeChar({name:'Joko',label:'Auditor',role:'auditor',skin:'#8d5524',hair:'#222222',shirt:'#566b7b',pants:'#34495e',hat:'#c39a58',home:[18,-2]})
+];
+const STAFF_FLOOR={ops:2,verify:2,auditor:2,transfer:3,finance:3};
+staff.forEach(s=>{s.f=STAFF_FLOOR[s.role]||1;s.by=FH*(s.f-1);s.g.position.set(s.home[0]+.5,s.by,s.home[1]+.5)});
+
+function hold(c,kind,col){
+  drop(c);const m=new THREE.Group();
+  if(kind==='bag'){box(.3,.34,.2,mat('#b98b5a'),0,0,0,m);box(.2,.12,.14,mat(col),0,.2,0,m)}else box(.26,.26,.26,mat(col),0,0,0,m);
+  c.holdG.add(m);c.held={m,kind,col};
+}
+function drop(c){if(!c.held)return null;const h=c.held;c.holdG.remove(h.m);c.held=null;return h}
+function give(a,b){const h=drop(a);if(h)hold(b,h.kind,h.col)}
+function say(c,t,ms=2600){c.workUntil=performance.now()+ms;c.bub.textContent=t;c.bub.style.display='block';clearTimeout(c.bt);c.bt=setTimeout(()=>c.bub.style.display='none',ms)}
+
+// Gerak dan pathfinding grid
+function bfs(s,t){
+  const key=(x,z)=>x+','+z,prev={[key(...s)]:null},q=[s];
+  while(q.length){
+    const [x,z]=q.shift();if(x===t[0]&&z===t[1])break;
+    for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=x+dx,nz=z+dz;
+      if(nx<0||nz<Z0||nx>=W||nz>=D||blocked[nz-Z0][nx]||(key(nx,nz) in prev))continue;
+      prev[key(nx,nz)]=[x,z];q.push([nx,nz]);
+    }
+  }
+  if(!(key(...t) in prev))return [];
+  const p=[];let c=t;
+  while(c&&!(c[0]===s[0]&&c[1]===s[1])){p.unshift(c);c=prev[key(...c)]}
+  return p;
+}
+const cellOf=c=>[Math.max(0,Math.min(W-1,Math.floor(c.g.position.x))),Math.max(Z0,Math.min(D-1,Math.floor(c.g.position.z)))];
+const move=(c,cells)=>new Promise(r=>{if(!cells.length)return r();c.path=cells;c.res=r});
+const sleep=ms=>new Promise(r=>setTimeout(r,ms)),LIFT=[18,8];let liftRider=null;
+function meet(a,b){if((a.f||1)!==(b.f||1))return;const dx=b.g.position.x-a.g.position.x,dz=b.g.position.z-a.g.position.z;a.rot=Math.atan2(dx,dz);b.rot=Math.atan2(-dx,-dz)}
+async function ride(c,f2){liftRider=c;await sleep(300);c.byGoal=FH*(f2-1);await new Promise(r=>{const w=()=>Math.abs(c.by-c.byGoal)<.05?r():requestAnimationFrame(w);w()});c.by=c.byGoal;c.byGoal=undefined;c.f=f2;await sleep(200);liftRider=null}
+async function walk(c,t){
+  if(c.role==='customer')c.sit=false;
+  const f=STAFF_FLOOR[c.role]||1;
+  if((c.f||1)!==f){blocked=grids[c.f||1];await move(c,bfs(cellOf(c),LIFT));await ride(c,f)}
+  blocked=grids[c.f||1];return move(c,bfs(cellOf(c),t));
+}
+
+// Mesin operasional bank: antrean, delegasi, serah-terima, approval dan audit.
+const staffQueues={};staff.forEach(s=>staffQueues[s.role]=[]);
+function acquire(role){const s=staff.find(s=>s.role===role&&!s.busy);if(s){s.busy=true;return Promise.resolve(s)}return new Promise(r=>staffQueues[role].push(r))}
+function release(s){const q=staffQueues[s.role]||[];const next=q.shift();if(next){next(s)}else{s.busy=false;walk(s,s.home).then(()=>{s.rot=0})}}
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const fmt=n=>'Rp '+Math.max(0,Number(n)||0).toLocaleString('id-ID');
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const logs=[];function log(m){logs.unshift(new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · '+m);logs.length=Math.min(logs.length,100)}
+let taskSeq=0,customerCount=0,auto=false,activeFlows=0;
+const tasks=[],approvals=[],customers=[];
+const serviceDefaults={Transfer:750000,Setoran:500000,Penarikan:350000,'Pembukaan rekening':0,Konsultasi:0};
+const queueSeats=[[9,7],[10,7],[11,7],[9,8],[10,8],[11,8]];let seatCursor=0;
+function newTask(service,amount,needsApproval){const id='NV-'+String(++taskSeq).padStart(5,'0');const t={id,service,amount:Number(amount)||0,status:'NEW',stage:'Nasabah datang',created:Date.now(),current:'Resepsionis',history:[],needsApproval,customer:null,approval:null};tasks.unshift(t);return t}
+function setTask(t,status,stage,staffName='Sistem'){t.status=status;t.stage=stage;t.current=staffName;t.history.push({at:Date.now(),status,stage,staff:staffName});if(t.memberAppId&&typeof memberStore!=='undefined'){const a=memberStore.applications.find(x=>x.id===t.memberAppId);if(a){a.status=status==='COMPLETED'?'COMPLETED':status==='FAILED'?'FAILED':status==='REJECTED'?'REJECTED':status==='WAITING_APPROVAL'?'PENDING_ADMIN':'PROCESSING';a.progress=a.status==='COMPLETED'?6:a.status==='PENDING_ADMIN'?4:3;a.history.push({status:a.status,at:Date.now(),actor:staffName,detail:stage});try{msave()}catch(e){}}}log(t.id+' · '+stage+' — '+staffName)}
+function addHistory(t,stage,s){setTask(t,'IN_PROGRESS',stage,s.name);say(s,stage,2300)}
+function spawnCustomer(service,amount){
+  if(activeFlows>=5){window.__nextBankRequest=null;log('Antrean penuh: maksimal 5 nasabah sedang dilayani');return false}
+  const chosen=service||document.getElementById('serviceType').value;
+  const val=amount!==undefined?Number(amount):Number(document.getElementById('serviceAmount').value||serviceDefaults[chosen]||0);
+  const approvalLimit=Number(bankData?.config?.approvalLimit??1500000);const needs=(val>0&&val>=approvalLimit)||!!window.__nextBankRequest?.forceApproval;
+  const t=newTask(chosen,val,needs);t.bankRequest=window.__nextBankRequest||null;window.__nextBankRequest=null;activeFlows++;
+  const palette=()=>({name:'Nasabah '+(++customerCount),label:'Nasabah',skin:pick(['#f5cba7','#e0ac69','#c68642','#8d5524']),hair:pick(['#222222','#6e2c00','#f1c40f','#c0392b','#7d3c98']),shirt:pick(['#e84393','#00b894','#6c5ce7','#fdcb6e','#0984e3']),pants:'#2d3436',role:'customer'});
+  const c=makeChar(palette());c.g.position.set(10.5,0,9.4);c.tag.textContent=c.name+' · Nasabah';c.tag.style.background='#536b7b';customers.push(c);t.customer=c;
+  (async()=>{
+    let held=[];
+    try{
+      setTask(t,'QUEUED','Nasabah memasuki bank','Sistem');
+      const seat=queueSeats[seatCursor++%queueSeats.length];await walk(c,[10,8]);await walk(c,seat);c.rot=Math.PI;c.sit=true;
+      const rec=await acquire('reception');held.push(rec);await walk(rec,[8,7]);meet(rec,c);addHistory(t,'Resepsionis menyambut nasabah',rec);await sleep(1100);say(c,'Saya ingin '+chosen.toLowerCase()+'');await sleep(700);release(rec);held=held.filter(x=>x!==rec);
+      const cs=await acquire('cs');held.push(cs);setTask(t,'IN_PROGRESS','Customer Service menerima permintaan',cs.name);await walk(cs,[7,-1]);await walk(c,[8,-1]);meet(cs,c);say(cs,'Baik, saya catat permintaannya.');await sleep(1500);say(c,'Nominal '+fmt(val));await sleep(800);release(cs);held=held.filter(x=>x!==cs);
+      const ops=await acquire('ops');held.push(ops);setTask(t,'ASSIGNED','Kepala Operasional membagi pekerjaan',ops.name);await walk(ops,[3,-6]);say(ops,'Saya tugaskan petugas verifikasi.');await sleep(1100);release(ops);held=held.filter(x=>x!==ops);
+      const ver=await acquire('verify');held.push(ver);setTask(t,'WAITING_VERIFICATION','Petugas memeriksa data permintaan',ver.name);await walk(ver,[7,-6]);say(ver,'Memeriksa data dan kelengkapan...');await sleep(1900);meet(ver,c);say(ver,'Pemeriksaan simulasi lolos.');await sleep(700);release(ver);held=held.filter(x=>x!==ver);
+      if(t.needsApproval){
+        const approval={id:'APR-'+t.id,task:t,status:'PENDING',created:Date.now(),resolve:null};approvals.unshift(approval);t.approval=approval;
+        setTask(t,'WAITING_APPROVAL','Menunggu persetujuan Owner','Owner');
+        const decision=await new Promise(resolve=>approval.resolve=resolve);
+        if(decision!=='APPROVED'){setTask(t,'REJECTED','Permintaan ditolak Owner','Owner');say(c,'Permintaan belum dapat disetujui.');await sleep(1000);return}
+        setTask(t,'APPROVED','Owner menyetujui permintaan','Owner');
+      }
+      let processorRole=chosen==='Setoran'||chosen==='Penarikan'?'teller':chosen==='Transfer'?'transfer':(window.__s6RM&&['Deposito','Pinjaman','Kartu virtual'].includes(chosen))?'rm':'cs';
+      const processor=await acquire(processorRole);held.push(processor);setTask(t,'IN_PROGRESS',processorRole==='teller'?'Teller memproses layanan':processorRole==='transfer'?'Transfer Officer menjalankan proses':processorRole==='rm'?'Relationship Manager memproses produk':'Customer Service menyelesaikan layanan',processor.name);await walk(processor,processorRole==='teller'?[12,4]:processorRole==='transfer'?[11,-6]:processorRole==='rm'?[6,-6]:[7,-1]);meet(processor,c);say(processor,'Memproses '+chosen.toLowerCase()+'...');await sleep(2200);say(processor,'Proses layanan selesai.');
+      if(t.bankRequest){say(processor,'Mencatat transaksi virtual...');await sleep(650);const bankResult=executeBankRequest(t);if(!bankResult.ok){setTask(t,'FAILED','Transaksi gagal: '+bankResult.error,processor.name);say(c,'Transaksi belum berhasil diproses.');throw new Error(bankResult.error)}}
+      await sleep(700);release(processor);held=held.filter(x=>x!==processor);
+      if(t.amount>=1500000||Math.random()<.2){const au=await acquire('auditor');held.push(au);setTask(t,'IN_PROGRESS','Auditor memeriksa jejak pekerjaan',au.name);await walk(au,[18,-1]);say(au,'Memeriksa kelengkapan catatan.');await sleep(1500);release(au);held=held.filter(x=>x!==au)}
+      const fin=await acquire('finance');held.push(fin);setTask(t,'IN_PROGRESS','Finance mencatat hasil operasional',fin.name);await walk(fin,[15,-6]);say(fin,'Catatan operasional tersimpan.');await sleep(1300);release(fin);held=held.filter(x=>x!==fin);
+      const finalCS=await acquire('cs');held.push(finalCS);setTask(t,'IN_PROGRESS','Customer Service memberi konfirmasi',finalCS.name);await walk(finalCS,[7,-1]);await walk(c,[8,-1]);meet(finalCS,c);say(finalCS,'Layanan selesai. Terima kasih!');await sleep(1300);release(finalCS);held=held.filter(x=>x!==finalCS);
+      setTask(t,'COMPLETED','Layanan selesai dan dicatat','Sistem');
+    }catch(err){console.error(err);setTask(t,'FAILED','Terjadi kesalahan pada alur tugas','Sistem');log('Kesalahan '+t.id+': '+err.message)}
+    finally{held.forEach(release);if(c&&c.g){await walk(c,[10,8]).catch(()=>{});scene.remove(c.g);c.bub.remove();if(c.tag)c.tag.remove();const ix=chars.indexOf(c);if(ix>=0)chars.splice(ix,1);const ci=customers.indexOf(c);if(ci>=0)customers.splice(ci,1)}activeFlows=Math.max(0,activeFlows-1)}
+  })();
+  return true;
+}
+function decideApproval(id,decision){const a=approvals.find(x=>x.id===id);if(!a||a.status!=='PENDING')return;a.status=decision;a.resolve?.(decision);log('Owner '+(decision==='APPROVED'?'menyetujui ':'menolak ')+a.task.id);renderDashboard()}
+function taskStats(){return {active:tasks.filter(t=>!['COMPLETED','REJECTED','FAILED','CANCELLED'].includes(t.status)).length,waiting:tasks.filter(t=>['QUEUED','WAITING_APPROVAL','WAITING_VERIFICATION'].includes(t.status)).length,done:tasks.filter(t=>t.status==='COMPLETED').length,pending:approvals.filter(a=>a.status==='PENDING').length}}
+function renderDashboard(){
+ const st=taskStats();document.getElementById('hStaff').textContent=staff.filter(s=>s.busy).length+' / '+staff.length;document.getElementById('hTasks').textContent=st.active;document.getElementById('hWait').textContent=st.waiting;document.getElementById('bdg').style.display=st.pending?'block':'none';
+ document.getElementById('overview').innerHTML='<div class="kpi"><div><span>Staf sedang bekerja</span><b>'+staff.filter(s=>s.busy).length+' / '+staff.length+'</b></div><div><span>Tugas aktif</span><b>'+st.active+'</b></div><div><span>Menunggu proses</span><b>'+st.waiting+'</b></div><div><span>Selesai</span><b>'+st.done+'</b></div><div><span>Persetujuan Owner</span><b>'+st.pending+'</b></div><div><span>Nasabah aktif</span><b>'+activeFlows+'</b></div></div><h4>Alur kerja</h4><p>Nasabah → Resepsionis → Customer Service → Kepala Operasional → Verifikasi → Petugas layanan → Finance → Konfirmasi.</p><h4>Bank virtual</h4><p>Rekening, saldo, transaksi, jurnal, dan audit tersimpan pada perangkat ini. Ini tetap simulasi dan bukan layanan bank sungguhan.</p><button class="action" onclick="openDashTab(\'tasks\')">Lihat antrean tugas</button>';
+ document.getElementById('tasks').innerHTML='<h4 style="margin-top:0">Antrean dan riwayat tugas</h4>'+(tasks.length?tasks.slice(0,35).map(t=>'<div class="taskcard"><div class="taskhead"><b>'+esc(t.id)+' · '+esc(t.service)+'</b><span class="status '+(t.status==='COMPLETED'?'good':t.status==='WAITING_APPROVAL'?'wait':t.status==='REJECTED'||t.status==='FAILED'?'bad':'')+'">'+esc(t.status)+'</span></div><div class="taskmeta">Nominal: '+fmt(t.amount)+' · Tahap: '+esc(t.stage)+'<br>Petugas: '+esc(t.current)+' · Riwayat: '+t.history.length+' tahap</div></div>').join(''):'<p>Belum ada tugas. Datangkan nasabah melalui menu Operasional. </p>');
+ const pending=approvals.filter(a=>a.status==='PENDING');document.getElementById('approvals').innerHTML='<h4 style="margin-top:0">Permintaan menunggu keputusan</h4>'+(pending.length?pending.map(a=>'<div class="taskcard"><div class="taskhead"><b>'+esc(a.task.id)+' · '+esc(a.task.service)+'</b><span class="status wait">MENUNGGU</span></div><div class="taskmeta">Nominal: '+fmt(a.task.amount)+'<br>Alasan: nominal memenuhi batas persetujuan Owner.</div><div class="row" style="margin-top:8px"><button class="action good" onclick="decideApproval(\''+a.id+'\',\'APPROVED\')">Setujui</button><button class="action bad" onclick="decideApproval(\''+a.id+'\',\'REJECTED\')">Tolak</button></div></div>').join(''):'<p>Tidak ada permintaan yang menunggu persetujuan.</p>');
+ document.getElementById('staffv').innerHTML='<h4 style="margin-top:0">Status, beban kerja, dan kinerja staf</h4>'+staff.map(s=>{const handled=tasks.reduce((n,t)=>n+t.history.filter(h=>h.staff===s.name).length,0);const current=tasks.find(t=>t.current===s.name&&!['COMPLETED','REJECTED','FAILED','CANCELLED'].includes(t.status));return '<div class="taskcard"><div class="taskhead"><b>'+esc(s.name)+'</b><span class="status '+(s.busy?'wait':'good')+'">'+(s.busy?'Bekerja':'Standby')+'</span></div><div class="taskmeta">'+esc(s.label)+' · Lantai '+(s.f||1)+'<br>Riwayat penanganan: '+handled+' tahap'+(current?'<br>Tugas saat ini: '+esc(current.id)+' · '+esc(current.stage):'')+'</div></div>'}).join('');
+ document.getElementById('logv').innerHTML=logs.map(l=>'<div class="logl">'+esc(l)+'</div>').join('')||'<small>Belum ada aktivitas.</small>';
+ const activePane=document.querySelector('.tab.on')?.dataset.tab;
+ if(!['customersv','settingsv'].includes(activePane))renderOwnerPanels();
+}
+function renderOwnerPanels(){
+ const money=bankMoney;
+ const accounts=bankData.accounts||[],txs=bankData.transactions||[],journal=bankData.journal||[];
+ const active=accounts.filter(a=>a.status==='ACTIVE');
+ const total=active.reduce((n,a)=>n+Number(a.balance||0),0);
+ const today=bankLocalDate(Date.now());
+ const todayTx=txs.filter(t=>bankLocalDate(t.at)===today&&t.status==='SUCCESS');
+ const debit=journal.reduce((n,j)=>n+Number(j.debit||0),0),credit=journal.reduce((n,j)=>n+Number(j.credit||0),0);
+ const diff=debit-credit;
+ document.getElementById('customersv').innerHTML='<h4 style="margin-top:0">Data nasabah dan rekening</h4><div class="kpi"><div><span>Total nasabah/rekening</span><b>'+accounts.length+'</b></div><div><span>Rekening aktif</span><b>'+active.length+'</b></div><div><span>Rekening dibekukan</span><b>'+accounts.filter(a=>a.status==='FROZEN').length+'</b></div><div><span>Total saldo aktif</span><b>'+money(total)+'</b></div></div><input class="field" id="customerSearch" placeholder="Cari nama atau nomor rekening..."><div id="customerRows">'+(accounts.length?accounts.map(a=>'<div class="taskcard customer-row" data-search="'+esc((a.name+' '+a.id).toLowerCase())+'"><div class="taskhead"><b>'+esc(a.name)+'</b><span class="status '+(a.status==='ACTIVE'?'good':'bad')+'">'+esc(a.status)+'</span></div><div class="taskmeta">'+esc(a.id)+' · '+esc(a.type)+'<br>Saldo: <b>'+money(a.balance)+'</b> · Dibuat: '+new Date(a.created).toLocaleDateString('id-ID')+'</div></div>').join(''):'<p>Belum ada nasabah.</p>')+'</div>';
+ const search=document.getElementById('customerSearch');if(search)search.oninput=()=>{const q=search.value.toLowerCase();document.querySelectorAll('.customer-row').forEach(el=>el.hidden=!el.dataset.search.includes(q))};
+ document.getElementById('financev').innerHTML='<h4 style="margin-top:0">Ringkasan keuangan</h4><div class="kpi"><div><span>Total saldo rekening aktif</span><b>'+money(total)+'</b></div><div><span>Transaksi berhasil</span><b>'+txs.filter(t=>t.status==='SUCCESS').length+'</b></div><div><span>Transaksi hari ini</span><b>'+todayTx.length+'</b></div><div><span>Setoran hari ini</span><b>'+money(todayTx.filter(t=>t.type==='SETORAN').reduce((n,t)=>n+t.amount,0))+'</b></div><div><span>Penarikan hari ini</span><b>'+money(todayTx.filter(t=>t.type==='PENARIKAN').reduce((n,t)=>n+t.amount,0))+'</b></div><div><span>Transfer hari ini</span><b>'+money(todayTx.filter(t=>t.type==='TRANSFER').reduce((n,t)=>n+t.amount,0))+'</b></div></div><h4>Rekonsiliasi jurnal</h4><div class="taskcard"><div class="ord"><b>Total debit</b><b>'+money(debit)+'</b></div><div class="ord"><b>Total kredit</b><b>'+money(credit)+'</b></div><div class="ord"><b>Selisih</b><b>'+money(Math.abs(diff))+'</b></div><p><span class="status '+(Math.abs(diff)<0.000001?'good':'bad')+'">'+(Math.abs(diff)<0.000001?'JURNAL SEIMBANG':'PERLU PEMERIKSAAN')+'</span></p></div><h4>Transaksi terbaru</h4>'+(txs.length?txs.slice(0,15).map(t=>'<div class="ord"><span><b>'+esc(t.id)+' · '+esc(t.type)+'</b><br><small>'+new Date(t.at).toLocaleString('id-ID')+' · '+esc(t.taskId||'Manual')+'</small></span><b>'+money(t.amount)+'</b></div>').join(''):'<p>Belum ada transaksi.</p>')+'<h4>Penutupan harian</h4>'+(bankData.closings||[]).slice(0,7).map(c=>'<div class="ord"><span><b>'+esc(c.id)+'</b><br><small>'+esc(c.date)+' · '+c.count+' transaksi</small></span><span class="status '+(c.balanced?'good':'bad')+'">'+(c.balanced?'SEIMBANG':'SELISIH')+'</span></div>').join('');
+ const limit=Number(bankData.config?.approvalLimit??1500000);
+ document.getElementById('settingsv').innerHTML='<h4 style="margin-top:0">Kebijakan operasional</h4><div class="taskcard"><label for="approvalLimit">Batas nominal yang memerlukan persetujuan Owner (Rp)</label><input class="field" id="approvalLimit" type="number" min="0" step="50000" value="'+limit+'"><small>Permintaan dengan nominal sama dengan atau lebih besar dari batas ini akan menunggu keputusan Owner sebelum transaksi diproses. Isi 0 untuk meminta persetujuan pada semua transaksi bernominal.</small><button class="action good" id="saveBankSettings" style="margin-top:8px">Simpan pengaturan</button></div><h4>Informasi sistem</h4><div class="taskcard"><div class="ord"><span>Versi data</span><b>'+esc(bankData.version)+'</b></div><div class="ord"><span>Penyimpanan</span><b>LocalStorage perangkat</b></div><div class="ord"><span>Mode</span><b>Simulasi virtual</b></div><div class="ord"><span>Jurnal</span><b>'+(Math.abs(diff)<0.000001?'Seimbang':'Perlu audit')+'</b></div></div><p class="taskmeta">Pengaturan ini berlaku pada permintaan baru. Data tetap tersimpan pada browser/perangkat ini, tidak tersinkron otomatis ke perangkat lain.</p>';
+ const save=document.getElementById('saveBankSettings');if(save)save.onclick=()=>{const v=Number(document.getElementById('approvalLimit').value);if(!Number.isFinite(v)||v<0){alert('Batas nominal tidak valid.');return}bankData.config.approvalLimit=v;bankAudit('PENGATURAN_LIMIT_APPROVAL','Batas persetujuan diubah menjadi '+money(v));bankSave();log('Pengaturan persetujuan Owner disimpan');renderDashboard();renderOwnerPanels();alert('Pengaturan berhasil disimpan.')};
+}
+window.openDashTab=t=>{document.getElementById('dashW').classList.add('open');showTab(t)};
+document.getElementById('bAdd').onclick=()=>{const service=document.getElementById('serviceType').value,amount=Number(document.getElementById('serviceAmount').value||0);spawnCustomer(service,amount);closeMenus()};
+document.getElementById('bAuto').onclick=()=>{auto=!auto;document.getElementById('bAuto').textContent='Simulasi otomatis: '+(auto?'ON':'OFF');log('Simulasi otomatis '+(auto?'diaktifkan':'dimatikan'))};
+setInterval(()=>{if(auto&&activeFlows<4)spawnCustomer(pick(['Transfer','Setoran','Penarikan','Konsultasi']),pick([250000,500000,750000,1250000,1750000]))},8500);
+setInterval(()=>{renderDashboard()},650);log('Narayan Virtual Bank siap. Tahap 5: dunia bank 3 lantai aktif.');
+
+// UI: dock, submenu, dashboard bertab, fullscreen, tema
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+const dashW=$('#dashW');
+const closeMenus=except=>$$('.item').forEach(i=>{if(i!==except)i.classList.remove('open')});
+$$('.dbtn').forEach(b=>b.onclick=e=>{e.stopPropagation();const it=b.parentElement;closeMenus(it);it.classList.toggle('open')});
+document.addEventListener('pointerdown',e=>{if(!e.target.closest('.item'))closeMenus()});
+function showTab(t){$$('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));$$('.pane').forEach(p=>p.hidden=p.dataset.pane!==t)}
+window.showTab=showTab;
+function openDash(t){dashW.classList.add('open');showTab(t||'overview');renderDashboard();renderOwnerPanels()}
+$$('.tab').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+$$('[data-dash]').forEach(b=>b.onclick=()=>{openDash(b.dataset.dash);closeMenus()});
+$('#bOpenDash').onclick=()=>{openDash('overview');closeMenus()};
+$('#bHideDash').onclick=()=>{dashW.classList.remove('open');closeMenus()};
+$('#dashX').onclick=()=>dashW.classList.remove('open');
+
+const isFs=()=>document.fullscreenElement||document.webkitFullscreenElement;
+function toggleFs(){
+  const el=document.documentElement,req=el.requestFullscreen||el.webkitRequestFullscreen,ex=document.exitFullscreen||document.webkitExitFullscreen;
+  try{const p=isFs()?ex.call(document):req.call(el);if(p&&p.catch)p.catch(()=>log('Fullscreen diblokir browser'))}catch(e){log('Fullscreen tidak didukung di sini')}
+}
+['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev,()=>{bFs.textContent=isFs()?'⤡ Keluar Fullscreen':'⛶ Fullscreen'}));
+bFs.onclick=toggleFs;
+
+const isDark=()=>{const t=document.documentElement.dataset.theme;return t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches};
+const applyBg=()=>{scene.background=new THREE.Color(0x17212d)};
+function setTheme(t){
+  if(t==='auto')delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=t;
+  applyBg();$$('[data-theme-btn]').forEach(b=>b.classList.toggle('on',b.dataset.themeBtn===t));
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyBg);
+$$('[data-theme-btn]').forEach(b=>b.onclick=()=>setTheme(b.dataset.themeBtn));
+setTheme('auto');
+
+addEventListener('keydown',e=>{
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  if(/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName))return;
+  const k=e.key.toLowerCase();
+  if(k==='f')toggleFs();
+  else if(k==='d'){dashW.classList.contains('open')?dashW.classList.remove('open'):openDash('overview')}
+  else if(k==='escape')closeMenus();
+  else if(k==='0'||k==='1'||k==='2'||k==='3')setFloor(k==='0'?'all':+k);
+});
+setTimeout(()=>tip.classList.add('gone'),9000);
+
+// Kamera ala SketchUp: orbit, geser, zoom ke kursor, tampilan standar, perspektif/paralel
+const goal={az:.3,el:.85,size:38,tx:10,tz:-1,fov:50,ty:FH+.8},cur={...goal};
+const groundPl=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+function placeCam(dt){
+  const k=Math.min(1,dt*8);for(const key in goal)cur[key]+=(goal[key]-cur[key])*k;
+  cam.fov=cur.fov;cam.updateProjectionMatrix();
+  const dist=cur.size*Math.tan(25*Math.PI/180)/Math.tan(cur.fov*Math.PI/360);
+  cam.position.set(cur.tx+dist*Math.cos(cur.el)*Math.sin(cur.az),cur.ty+dist*Math.sin(cur.el),cur.tz+dist*Math.cos(cur.el)*Math.cos(cur.az));
+  cam.lookAt(cur.tx,cur.ty,cur.tz);
+}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const orbit=(dx,dy)=>{goal.az-=dx*.006;goal.el=clamp(goal.el+dy*.006,.08,1.52)};
+function pan(dx,dy){
+  const s=goal.size*.0022,sa=Math.sin(goal.az),ca=Math.cos(goal.az);
+  goal.tx=clamp(goal.tx-ca*dx*s-sa*dy*s,0,44);goal.tz=clamp(goal.tz+sa*dx*s-ca*dy*s,Z0,D);
+}
+function zoomBy(f,mx,my){
+  const ns=clamp(goal.size*f,5,60);f=ns/goal.size;
+  const r=new THREE.Raycaster(),h=new THREE.Vector3();
+  r.setFromCamera(new THREE.Vector2(mx/innerWidth*2-1,-(my/innerHeight)*2+1),cam);
+  if(r.ray.intersectPlane(groundPl,h)){goal.tx=clamp(h.x+(goal.tx-h.x)*f,0,44);goal.tz=clamp(h.z+(goal.tz-h.z)*f,Z0,D)}
+  goal.size=ns;
+}
+let tool='orbit',lastPinch=0;const ptr=new Map();
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,{x:e.clientX,y:e.clientY,b:e.button});lastPinch=0});
+cv.addEventListener('pointermove',e=>{
+  const p=ptr.get(e.pointerId);if(!p)return;
+  const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+  if(ptr.size>=2){
+    const [a,b]=[...ptr.values()],d=Math.hypot(a.x-b.x,a.y-b.y);
+    if(lastPinch)zoomBy(lastPinch/d,(a.x+b.x)/2,(a.y+b.y)/2);
+    lastPinch=d;pan(dx/2,dy/2);return;
+  }
+  const mode=p.b===1?(e.shiftKey?'pan':'orbit'):p.b===2?'orbit':tool;
+  mode==='pan'?pan(dx,dy):orbit(dx,dy);
+});
+const endP=e=>{ptr.delete(e.pointerId);lastPinch=0};
+cv.addEventListener('pointerup',endP);cv.addEventListener('pointercancel',endP);
+cv.addEventListener('wheel',e=>{e.preventDefault();zoomBy(e.deltaY>0?1.1:1/1.1,e.clientX,e.clientY)},{passive:false});
+const setTool=t=>{tool=t;tOrbit.classList.toggle('on',t==='orbit');tPan.classList.toggle('on',t==='pan')};
+tOrbit.onclick=()=>setTool('orbit');tPan.onclick=()=>setTool('pan');
+const views={top:[0,1.52],front:[0,.1],left:[-Math.PI/2,.1],iso:[.8,.6]};
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{const [a,e]=views[b.dataset.v];goal.az=a;goal.el=e;goal.tx=10;goal.tz=-1;goal.size=b.dataset.v==='top'?34:27});
+tProj.onclick=()=>{const par=goal.fov>20;goal.fov=par?5:50;tProj.textContent=par?'Paralel':'Perspektif'};
+
+function resize(){renderer.setPixelRatio(PR);renderer.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+
+let viewMode='all';
+function setFloor(m){viewMode=m;fl[2].visible=m==='all'||m>=2;fl[3].visible=m==='all'||m>=3;$$('[data-fl]').forEach(b=>b.classList.toggle('on',b.dataset.fl===String(m)));goal.ty=(m==='all'?FH:FH*(m-1))+.8;goal.size=m==='all'?38:27;log('Tampilan: '+(m==='all'?'semua lantai':'sampai lantai '+m))}
+$$('[data-fl]').forEach(b=>b.onclick=()=>{setFloor(b.dataset.fl==='all'?'all':+b.dataset.fl);closeMenus()});
+const clock=new THREE.Clock(),v=new THREE.Vector3();
+function label(div,x,y,z,dy){
+  v.set(x,y,z).project(cam);
+  if(v.z>1){div.style.visibility='hidden';return}
+  div.style.visibility='visible';
+  div.style.transform='translate('+((v.x*.5+.5)*innerWidth)+'px,'+((-v.y*.5+.5)*innerHeight+dy)+'px) translate(-50%,-100%)';
+}
+function loop(){
+  requestAnimationFrame(loop);
+  const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
+  for(const c of chars){
+    const p=c.g.position;let moving=false;const show=viewMode==='all'||(c.f||1)<=viewMode;c.g.visible=show;c.desk=!c.path.length&&c.role!=='customer'&&performance.now()<(c.workUntil||0);if(c.byGoal!==undefined){const d=c.byGoal-c.by;c.by+=Math.sign(d)*Math.min(Math.abs(d),3.2*dt)}
+    if(c.path.length){
+      const [tx,tz]=c.path[0],dx=tx+.5-p.x,dz=tz+.5-p.z,d=Math.hypot(dx,dz),step=2.4*dt;
+      if(d>.001)c.rot=Math.atan2(dx,dz);
+      if(d<=step){p.x=tx+.5;p.z=tz+.5;c.path.shift();if(!c.path.length&&c.res){const r=c.res;c.res=null;r()}}
+      else{p.x+=dx/d*step;p.z+=dz/d*step}
+      moving=true;
+    }
+    let dr=c.rot-c.g.rotation.y;dr=Math.atan2(Math.sin(dr),Math.cos(dr));c.g.rotation.y+=dr*Math.min(1,dt*12);
+    c.amp+=((moving?.9:0)-c.amp)*Math.min(1,dt*10);
+    const sw=Math.sin(t*10)*c.amp;
+    c.armL.rotation.x=sw;c.armR.rotation.x=-sw;c.legL.rotation.x=-sw;c.legR.rotation.x=sw;
+    c.g.position.y=c.by+Math.abs(sw)*.07;if(c.sit&&!moving){c.g.position.y=c.by+.28;c.legL.rotation.x=c.legR.rotation.x=-1.5}
+    c.hg.rotation.z=Math.sin(t*1.6+c.ph)*.05+sw*.06;
+    c.hg.position.y=1.15+Math.sin(t*2.4+c.ph)*.012;
+    if(c.holdG.children.length){c.armL.rotation.x=-.9;c.armR.rotation.x=-.9}
+    else if(c.desk&&!moving){c.armL.rotation.x=-1.1+Math.sin(t*13+c.ph)*.18;c.armR.rotation.x=-1.1+Math.sin(t*13+c.ph+2)*.18}
+    if(!show){c.bub.style.visibility='hidden'}else if(c.bub.style.display==='block')label(c.bub,p.x,p.y+1.95,p.z,c.tag?-24:0);
+    if(c.tag){c.tag.style.display='block';if(!show)c.tag.style.visibility='hidden';else label(c.tag,p.x,p.y+1.85,p.z,0)}
+  }
+  if(liftRider)cabin.position.y=1.1+liftRider.by;
+  leds.forEach((l,i)=>l.visible=Math.sin(t*6+i*1.7)>-.3);
+  ownerLamp.material.color.setHex(approvals.some(a=>a.status==='PENDING')?0xff4d4d:0x2ecc71);ownerLamp.scale.setScalar(1+.15*Math.sin(t*5));
+  qa.t+=dt;if(++qa.n>=120){const fps=120/qa.t;if(fps<35&&PR>.7){PR=Math.max(.65,PR-.25);resize();log('Kualitas render diturunkan ('+PR.toFixed(2)+'x) agar lancar')}qa.t=qa.n=0}
+  placeCam(dt);
+  renderer.render(scene,cam);
+}
+loop();
+
+// ================================================================
+// TAHAP 2 + 4 — BANKING ENGINE & OWNER DASHBOARD (rekening virtual, saldo, transaksi, jurnal)
+// Seluruh data bersifat simulasi lokal; tidak terhubung ke bank nyata.
+// ================================================================
+const BANK_STORE_KEY='narayan_virtual_bank_v2';
+const bankSeed={
+  version:4,seq:3,txSeq:0,audit:[],closings:[],config:{approvalLimit:1500000},
+  accounts:[
+    {id:'NV00100001',name:'Andi Pratama',type:'Reguler',balance:5000000,status:'ACTIVE',created:Date.now()},
+    {id:'NV00100002',name:'Siti Rahma',type:'Reguler',balance:3250000,status:'ACTIVE',created:Date.now()},
+    {id:'NV00100003',name:'Bima Saputra',type:'Tabungan',balance:7800000,status:'ACTIVE',created:Date.now()}
+  ],
+  transactions:[],journal:[]
+};
+function bankLoad(){
+  try{const raw=localStorage.getItem(BANK_STORE_KEY);if(!raw)return structuredClone(bankSeed);
+    const d=JSON.parse(raw);
+    if(!d||!Array.isArray(d.accounts)||!Array.isArray(d.transactions)||!Array.isArray(d.journal))return structuredClone(bankSeed);
+    return d;
+  }catch(e){console.warn('Data bank lokal tidak dapat dibaca',e);return structuredClone(bankSeed)}
+}
+let bankData=bankLoad();
+bankData.version=6;
+bankData.seq=Number.isSafeInteger(Number(bankData.seq))&&Number(bankData.seq)>=0?Number(bankData.seq):bankData.accounts.length;
+bankData.txSeq=Number.isSafeInteger(Number(bankData.txSeq))&&Number(bankData.txSeq)>=0?Number(bankData.txSeq):bankData.transactions.length;
+bankData.config=bankData.config&&typeof bankData.config==='object'&&!Array.isArray(bankData.config)?bankData.config:{approvalLimit:1500000};
+bankData.config.approvalLimit=Number.isFinite(Number(bankData.config.approvalLimit))&&Number(bankData.config.approvalLimit)>=0?Number(bankData.config.approvalLimit):1500000;
+bankData.audit=Array.isArray(bankData.audit)?bankData.audit:[];
+bankData.closings=Array.isArray(bankData.closings)?bankData.closings:[];
+// Rekam saldo awal contoh agar buku besar awal tetap seimbang.
+if(bankData.transactions.length===0&&bankData.journal.length===0&&bankData.accounts.some(a=>Number(a.balance)>0)){
+  const at=Date.now();
+  bankData.accounts.forEach(a=>{const opening=Number(a.balance)||0;if(opening<=0)return;const id=bankNextTx();bankData.transactions.push({id,type:'PEMBUKAAN',amount:opening,source:null,target:a.id,status:'SUCCESS',at,note:'Saldo awal simulasi',taskId:null});bankData.journal.push({id,account:'Kas Bank Virtual',debit:opening,credit:0,at},{id,account:a.id+' · '+a.name,debit:0,credit:opening,at})});
+  try{localStorage.setItem(BANK_STORE_KEY,JSON.stringify(bankData))}catch(e){console.warn('Saldo awal belum tersimpan',e)}
+}
+function bankAudit(action,detail){
+  bankData.audit.unshift({at:Date.now(),action:String(action),detail:String(detail)});
+  bankData.audit=bankData.audit.slice(0,500);
+}
+function bankSave(){
+  try{
+    const payload=JSON.stringify(bankData);
+    localStorage.setItem(BANK_STORE_KEY,payload);
+    window.__bankPersistenceError=null;
+    return true;
+  }catch(e){
+    window.__bankPersistenceError=e;
+    console.error('Penyimpanan bank gagal:',e);
+    log('Penyimpanan bank gagal: '+(e&&e.message?e.message:'ruang penyimpanan tidak tersedia'));
+    return false;
+  }
+}
+function bankValidateBackup(d){
+  if(!d||typeof d!=='object'||Array.isArray(d))throw Error('Format cadangan bukan objek JSON.');
+  for(const k of ['accounts','transactions','journal'])if(!Array.isArray(d[k]))throw Error('Bagian '+k+' harus berupa array.');
+  if(d.accounts.length>100000||d.transactions.length>1000000||d.journal.length>2000000)throw Error('Ukuran data melebihi batas aman.');
+  const ids=new Set();
+  for(const a of d.accounts){
+    if(!a||typeof a!=='object'||typeof a.id!=='string'||!a.id.trim()||typeof a.name!=='string'||!a.name.trim())throw Error('Ada data rekening yang tidak valid.');
+    if(ids.has(a.id))throw Error('Nomor rekening duplikat: '+a.id);ids.add(a.id);
+    if(!Number.isFinite(Number(a.balance))||Number(a.balance)<0)throw Error('Saldo rekening tidak valid: '+a.id);
+    if(!['ACTIVE','FROZEN'].includes(a.status))throw Error('Status rekening tidak valid: '+a.id);
+    if(typeof a.type!=='string'||a.type.length>40)throw Error('Jenis rekening tidak valid: '+a.id);
+  }
+  for(const t of d.transactions){
+    if(!t||typeof t!=='object'||typeof t.id!=='string'||!t.id.trim()||typeof t.type!=='string'||!Number.isFinite(Number(t.amount))||Number(t.amount)<0||!Number.isFinite(Number(t.at)))throw Error('Ada transaksi yang tidak valid.');
+  }
+  for(const j of d.journal){
+    if(!j||typeof j!=='object'||typeof j.id!=='string'||typeof j.account!=='string'||!Number.isFinite(Number(j.debit))||!Number.isFinite(Number(j.credit))||Number(j.debit)<0||Number(j.credit)<0||!Number.isFinite(Number(j.at)))throw Error('Ada baris jurnal yang tidak valid.');
+    if(Number(j.debit)>0&&Number(j.credit)>0)throw Error('Satu baris jurnal tidak boleh memiliki debit dan kredit sekaligus.');
+  }
+  if(d.config!==undefined&&(!d.config||typeof d.config!=='object'||Array.isArray(d.config)))throw Error('Konfigurasi bank tidak valid.');
+  if(d.s6!==undefined){
+    if(!d.s6||typeof d.s6!=='object'||Array.isArray(d.s6))throw Error('Data produk Tahap 6 tidak valid.');
+    for(const k of ['deposits','loans','cards','payroll'])if(d.s6[k]!==undefined&&!Array.isArray(d.s6[k]))throw Error('Data '+k+' Tahap 6 tidak valid.');
+    if(d.s6.cfg!==undefined&&(!d.s6.cfg||typeof d.s6.cfg!=='object'||Array.isArray(d.s6.cfg)))throw Error('Konfigurasi produk tidak valid.');
+  }
+  return d;
+}
+const bankMoney=n=>'Rp '+Math.max(0,Number(n)||0).toLocaleString('id-ID');
+const bankAccount=id=>bankData.accounts.find(a=>a.id===id);
+const bankNextTx=()=>`NVB-${String(++bankData.txSeq).padStart(6,'0')}`;
+function bankAddAccount(name,type,opening){
+  name=String(name||'').trim();opening=Number(opening);
+  if(!name)return {ok:false,error:'Nama nasabah wajib diisi.'};
+  if(!Number.isFinite(opening)||opening<0)return {ok:false,error:'Saldo awal tidak valid.'};
+  const id='NV'+String(++bankData.seq).padStart(8,'0');
+  const a={id,name,type:type||'Reguler',balance:opening,status:'ACTIVE',created:Date.now()};
+  bankData.accounts.push(a);
+  bankAudit('BUAT_REKENING',id+' · '+name+' · saldo awal '+bankMoney(opening));
+  if(opening>0){
+    const txid=bankNextTx(),at=Date.now();
+    bankData.transactions.unshift({id:txid,type:'PEMBUKAAN',amount:opening,source:null,target:id,status:'SUCCESS',at,note:'Saldo awal rekening',taskId:null});
+    bankData.journal.unshift(
+      {id:txid,account:'Kas Bank Virtual',debit:opening,credit:0,at},
+      {id:txid,account:id+' · '+name,debit:0,credit:opening,at}
+    );
+  }
+  bankSave();log('Rekening virtual dibuat: '+id+' · '+name);renderBankUI();return {ok:true,account:a};
+}
+function bankPost(type,amount,sourceId,targetId,note,taskId){
+  if(taskId){const existing=bankData.transactions.find(t=>t.taskId===taskId&&t.status==='SUCCESS');if(existing)return {ok:true,transaction:existing,duplicate:true}}
+  amount=Number(amount);
+  if(!Number.isFinite(amount)||amount<=0)return {ok:false,error:'Nominal harus lebih besar dari nol.'};
+  const source=sourceId?bankAccount(sourceId):null,target=targetId?bankAccount(targetId):null;
+  if(type==='SETORAN'&&(!target||target.status!=='ACTIVE'))return {ok:false,error:'Rekening tujuan tidak aktif atau tidak ditemukan.'};
+  if(type==='PENARIKAN'&&(!source||source.status!=='ACTIVE'))return {ok:false,error:'Rekening sumber tidak aktif atau tidak ditemukan.'};
+  if(type==='TRANSFER'&&(!source||!target||source.status!=='ACTIVE'||target.status!=='ACTIVE'))return {ok:false,error:'Rekening sumber/tujuan tidak valid atau tidak aktif.'};
+  if(type==='TRANSFER'&&source.id===target.id)return {ok:false,error:'Rekening sumber dan tujuan tidak boleh sama.'};
+  if((type==='PENARIKAN'||type==='TRANSFER')&&source.balance<amount)return {ok:false,error:'Saldo tidak mencukupi. Saldo tersedia: '+bankMoney(source.balance)};
+  // Mutasi dilakukan setelah seluruh validasi lolos.
+  if(type==='SETORAN')target.balance+=amount;
+  if(type==='PENARIKAN')source.balance-=amount;
+  if(type==='TRANSFER'){source.balance-=amount;target.balance+=amount}
+  const id=bankNextTx(),at=Date.now();
+  const tx={id,type,amount,source:sourceId||null,target:targetId||null,status:'SUCCESS',at,note:String(note||''),taskId:taskId||null};
+  bankData.transactions.unshift(tx);
+  bankAudit(type,id+' · '+bankMoney(amount)+' · '+(sourceId||'Kas Bank Virtual')+' → '+(targetId||'Kas Bank Virtual'));
+  if(type==='SETORAN')bankData.journal.unshift(
+    {id,account:'Kas Bank Virtual',debit:amount,credit:0,at},
+    {id,account:target.id+' · '+target.name,debit:0,credit:amount,at}
+  );
+  if(type==='PENARIKAN')bankData.journal.unshift(
+    {id,account:source.id+' · '+source.name,debit:amount,credit:0,at},
+    {id,account:'Kas Bank Virtual',debit:0,credit:amount,at}
+  );
+  if(type==='TRANSFER')bankData.journal.unshift(
+    {id,account:source.id+' · '+source.name,debit:amount,credit:0,at},
+    {id,account:target.id+' · '+target.name,debit:0,credit:amount,at}
+  );
+  bankSave();log(id+' · '+type+' berhasil · '+bankMoney(amount));renderBankUI();
+  return {ok:true,transaction:tx};
+}
+function executeBankRequest(task){
+  const r=task.bankRequest;if(!r)return {ok:true};
+  const result=bankPost(r.type,r.amount,r.sourceId,r.targetId,r.note,task.id);
+  if(result.ok){task.bankTransactionId=result.transaction.id;log(task.id+' terhubung ke '+result.transaction.id)}
+  return result;
+}
+function bankOpenFor(type){
+  const title=type==='SETORAN'?'Setoran':type==='PENARIKAN'?'Penarikan':'Transfer';
+  const source=document.getElementById('bankSource')?.value||'';
+  const target=document.getElementById('bankTarget')?.value||'';
+  const amount=Number(document.getElementById('bankAmount')?.value||0);
+  if(type==='SETORAN'&&!target){alert('Pilih rekening nasabah.');return}
+  if(type==='PENARIKAN'&&!source){alert('Pilih rekening nasabah.');return}
+  if(type==='TRANSFER'&&(!source||!target)){alert('Pilih rekening sumber dan tujuan.');return}
+  if(!Number.isFinite(amount)||amount<=0){alert('Masukkan nominal yang valid.');return}
+  if(activeFlows>=5){alert('Antrean sedang penuh. Tunggu sampai ada nasabah selesai dilayani.');return}
+  window.__nextBankRequest={type,amount,sourceId:source||null,targetId:target||null,note:document.getElementById('bankNote')?.value||''};
+  const service=type==='SETORAN'?'Setoran':type==='PENARIKAN'?'Penarikan':'Transfer';
+  const accepted=spawnCustomer(service,amount);
+  if(!accepted)return;
+  openDash('tasks');closeMenus();
+  log('Nasabah dibuat untuk proses '+title.toLowerCase()+' melalui staf.');
+}
+
+function bankToggleAccount(id){
+  const a=bankAccount(id);if(!a)return;
+  const next=a.status==='ACTIVE'?'FROZEN':'ACTIVE';
+  const verb=next==='FROZEN'?'membekukan':'mengaktifkan kembali';
+  if(!confirm('Yakin '+verb+' rekening '+a.id+' · '+a.name+'?'))return;
+  a.status=next;
+  bankAudit(next==='FROZEN'?'REKENING_DIBEKUKAN':'REKENING_DIAKTIFKAN',a.id+' · '+a.name);
+  bankSave();log('Status rekening '+a.id+' diubah menjadi '+next);renderBankUI();
+}
+function bankLocalDate(ts){
+  const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function bankDailyClose(){
+  const today=bankLocalDate(Date.now());
+  if(bankData.closings.some(c=>c.date===today)){
+    alert('Penutupan harian untuk tanggal ini sudah dibuat.');return;
+  }
+  const txs=bankData.transactions.filter(t=>bankLocalDate(t.at)===today&&t.status==='SUCCESS');
+  const sum=(type)=>txs.filter(t=>t.type===type).reduce((n,t)=>n+Number(t.amount||0),0);
+  const totalBalance=bankData.accounts.filter(a=>a.status==='ACTIVE').reduce((n,a)=>n+Number(a.balance||0),0);
+  const report={
+    id:'CLOSE-'+today.replace(/-/g,''),
+    date:today,created:Date.now(),count:txs.length,
+    deposits:sum('SETORAN'),withdrawals:sum('PENARIKAN'),
+    transfers:sum('TRANSFER'),openingAccounts:sum('PEMBUKAAN'),
+    activeAccounts:bankData.accounts.filter(a=>a.status==='ACTIVE').length,
+    frozenAccounts:bankData.accounts.filter(a=>a.status==='FROZEN').length,
+    totalBalance,ledgerDifference:bankData.journal.reduce((n,j)=>n+Number(j.debit||0)-Number(j.credit||0),0),balanced:Math.abs(bankData.journal.reduce((n,j)=>n+Number(j.debit||0)-Number(j.credit||0),0))<0.000001
+  };
+  bankData.closings.unshift(report);
+  bankAudit('PENUTUPAN_HARIAN',report.id+' · '+report.count+' transaksi · saldo '+bankMoney(totalBalance));
+  bankSave();renderBankUI();
+  alert('Penutupan harian tersimpan: '+report.id);
+}
+
+function renderBankUI(){
+  const root=document.getElementById('bankApp');if(!root)return;
+  const active=bankData.accounts.filter(a=>a.status==='ACTIVE');
+  const total=active.reduce((n,a)=>n+a.balance,0);
+  const opts=active.map(a=>`<option value="${esc(a.id)}">${esc(a.id)} · ${esc(a.name)} — ${bankMoney(a.balance)}</option>`).join('');
+  const accounts=bankData.accounts.map(a=>`<div class="taskcard"><div class="taskhead"><b>${esc(a.name)}</b><span class="status ${a.status==='ACTIVE'?'good':'bad'}">${esc(a.status)}</span></div><div class="taskmeta">${esc(a.id)} · ${esc(a.type)}<br>Saldo: <b>${bankMoney(a.balance)}</b></div><div class="row" style="margin-top:8px"><button class="action ${a.status==='ACTIVE'?'bad':'good'}" data-account-toggle="${esc(a.id)}">${a.status==='ACTIVE'?'Bekukan rekening':'Aktifkan rekening'}</button></div></div>`).join('');
+  const txs=bankData.transactions.slice(0,25).map(t=>`<div class="taskcard"><div class="taskhead"><b>${esc(t.id)} · ${esc(t.type)}</b><span class="status good">${esc(t.status)}</span></div><div class="taskmeta">${bankMoney(t.amount)} · ${new Date(t.at).toLocaleString('id-ID')}<br>${esc(t.source||'Kas Bank Virtual')} → ${esc(t.target||'Kas Bank Virtual')}${t.taskId?' · Tugas '+esc(t.taskId):''}</div></div>`).join('');
+  const journals=bankData.journal.slice(0,30).map(j=>`<div class="ord"><span><b>${esc(j.account)}</b><br><small>${esc(j.id)} · ${new Date(j.at).toLocaleString('id-ID')}</small></span><span style="text-align:right">D ${bankMoney(j.debit)}<br>K ${bankMoney(j.credit)}</span></div>`).join('');
+  root.innerHTML=`
+    <div class="kpi">
+      <div><span>Jumlah rekening</span><b>${bankData.accounts.length}</b></div>
+      <div><span>Total saldo nasabah</span><b>${bankMoney(total)}</b></div>
+      <div><span>Transaksi berhasil</span><b>${bankData.transactions.length}</b></div>
+      <div><span>Baris jurnal</span><b>${bankData.journal.length}</b></div>
+    </div>
+    <h4>Proses layanan melalui staf</h4>
+    <div class="taskcard">
+      <label>Jenis transaksi</label>
+      <div class="row"><button class="action" id="bankDeposit">Setoran</button><button class="action" id="bankWithdraw">Penarikan</button><button class="action" id="bankTransfer">Transfer</button></div>
+      <label for="bankSource">Rekening sumber (penarikan / transfer)</label><select class="field" id="bankSource"><option value="">Pilih rekening sumber</option>${opts}</select>
+      <label for="bankTarget">Rekening tujuan (setoran / transfer)</label><select class="field" id="bankTarget"><option value="">Pilih rekening tujuan</option>${opts}</select>
+      <label for="bankAmount">Nominal (Rp)</label><input class="field" id="bankAmount" type="number" min="1" step="10000" value="250000">
+      <label for="bankNote">Catatan</label><input class="field" id="bankNote" maxlength="100" placeholder="Catatan transaksi (opsional)">
+      <small>Transaksi akan melewati antrean staf. Saldo hanya berubah setelah tahapan pemrosesan berhasil.</small>
+    </div>
+    <h4>Buat rekening virtual</h4>
+    <div class="taskcard">
+      <label for="newAccName">Nama nasabah</label><input class="field" id="newAccName" maxlength="60" placeholder="Nama lengkap nasabah">
+      <label for="newAccType">Jenis rekening</label><select class="field" id="newAccType"><option>Reguler</option><option>Tabungan</option><option>Bisnis</option></select>
+      <label for="newAccBalance">Saldo awal simulasi (Rp)</label><input class="field" id="newAccBalance" type="number" min="0" step="10000" value="0">
+      <button class="action good" id="newAccCreate">＋ Buat rekening</button>
+    </div>
+    <h4>Rekening nasabah (${bankData.accounts.length})</h4><small>Rekening yang dibekukan tidak dapat dipakai untuk transaksi baru.</small>${accounts||'<p>Belum ada rekening.</p>'}
+    <h4>Penutupan harian & pemeriksaan jurnal</h4>
+    <div class="taskcard"><p>Buat snapshot transaksi dan saldo nasabah. Pemeriksaan debit-kredit hanya menguji keseimbangan total jurnal; belum menggantikan rekonsiliasi setiap akun.</p><button class="action good" id="bankDailyClose">Tutup buku hari ini</button></div>
+    ${bankData.closings.slice(0,10).map(c=>`<div class="taskcard"><div class="taskhead"><b>${esc(c.id)}</b><span class="status good">TERSIMPAN</span></div><div class="taskmeta">${esc(c.date)} · ${c.count} transaksi<br>Setoran ${bankMoney(c.deposits)} · Penarikan ${bankMoney(c.withdrawals)}<br>Transfer ${bankMoney(c.transfers)} · Saldo akhir ${bankMoney(c.totalBalance)}<br>Rekening aktif ${c.activeAccounts} · dibekukan ${c.frozenAccounts}</div></div>`).join('')||'<small>Belum ada penutupan harian.</small>'}
+    <h4>Transaksi terakhir</h4>${txs||'<p>Belum ada transaksi.</p>'}
+    <h4>Jurnal debit / kredit</h4>${journals||'<p>Belum ada jurnal.</p>'}
+    <h4>Jejak audit (${bankData.audit.length})</h4>
+    ${bankData.audit.slice(0,20).map(a=>`<div class="logl">${new Date(a.at).toLocaleString('id-ID')} · <b>${esc(a.action)}</b> — ${esc(a.detail)}</div>`).join('')||'<small>Belum ada jejak audit.</small>'}
+    <div class="row" style="margin:12px 0">
+      <button class="action" id="bankExport">Ekspor cadangan JSON</button>
+      <button class="action" id="bankImportBtn">Impor cadangan JSON</button>
+      <input id="bankImportFile" type="file" accept="application/json" hidden>
+    </div>
+    <small>Tahap 3: kontrol rekening, jejak audit, dan penutupan harian. Mode simulasi lokal; jangan gunakan data pribadi atau rekening sungguhan. Simpan cadangan JSON secara berkala.</small>`;
+  document.querySelectorAll('[data-account-toggle]').forEach(b=>b.onclick=()=>bankToggleAccount(b.dataset.accountToggle));
+  document.getElementById('bankDailyClose').onclick=bankDailyClose;
+  document.getElementById('bankDeposit').onclick=()=>bankOpenFor('SETORAN');
+  document.getElementById('bankWithdraw').onclick=()=>bankOpenFor('PENARIKAN');
+  document.getElementById('bankTransfer').onclick=()=>bankOpenFor('TRANSFER');
+  document.getElementById('newAccCreate').onclick=()=>{
+    const r=bankAddAccount(document.getElementById('newAccName').value,document.getElementById('newAccType').value,document.getElementById('newAccBalance').value);
+    if(!r.ok)alert(r.error);else{alert('Rekening virtual dibuat: '+r.account.id);renderDashboard();renderOwnerPanels()}
+  };
+  document.getElementById('bankExport').onclick=()=>{
+    const blob=new Blob([JSON.stringify(bankData,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Narayan_Virtual_Bank_Backup.json';a.click();URL.revokeObjectURL(url);
+  };
+  document.getElementById('bankImportBtn').onclick=()=>document.getElementById('bankImportFile').click();
+  document.getElementById('bankImportFile').onchange=async e=>{
+    const f=e.target.files[0];if(!f)return;
+    try{
+      if(f.size>25*1024*1024)throw Error('Ukuran file terlalu besar (maksimal 25 MB).');
+      const d=bankValidateBackup(JSON.parse(await f.text()));
+      if(!confirm('Impor akan mengganti data bank virtual saat ini. Pastikan Anda sudah mengekspor cadangan terbaru. Lanjutkan?'))return;
+      const previous=bankData;
+      bankData=d;
+      if(!bankSave()){bankData=previous;throw Error('Penyimpanan gagal. Data sebelumnya dipulihkan; periksa ruang penyimpanan browser.');}
+      renderBankUI();renderDashboard();renderOwnerPanels();
+      alert('Cadangan berhasil divalidasi dan diimpor.');
+    }catch(err){alert('Gagal mengimpor: '+err.message)}
+    finally{e.target.value='';}
+  };
+}
+document.getElementById('bBankDash').onclick=()=>{openDash('bankv');closeMenus()};
+renderBankUI();
+
+// ================================================================
+// TAHAP 6 — PRODUK LANJUTAN, EKONOMI & EKSPANSI GEDUNG
+// Deposito, pinjaman, kartu virtual, Lantai 4, gaji & kinerja staf.
+// Memakai jurnal, audit, workflow staf, dan LocalStorage yang sama. Seluruhnya simulasi.
+// ================================================================
+(()=>{
+const KAS='Kas Bank Virtual',R=bankMoney;
+const DEF=()=>({month:0,depSeq:0,loanSeq:0,cardSeq:0,deposits:[],loans:[],cards:[],payroll:[],mark:{},floor4:false,capital:false,
+ cfg:{dep:{3:4.5,6:5.5,12:6.5},loanRate:12,cardFee:25000,penalty:1,loanMax:20000000,depMin:1000000,expand:50000000,
+ sal:{reception:3000000,cs:3500000,teller:3500000,ops:8000000,verify:4500000,transfer:4500000,finance:5000000,auditor:5500000,rm:6000000}}});
+function S(){const b=bankData;if(!b.s6||typeof b.s6!=='object')b.s6=DEF();const d=DEF(),s=b.s6;for(const k in d)if(s[k]===undefined)s[k]=d[k];for(const k in d.cfg)if(s.cfg[k]===undefined)s.cfg[k]=d.cfg[k];b.version=6;return s}
+const acct=id=>bankAccount(id),actv=()=>bankData.accounts.filter(a=>a.status==='ACTIVE'),lbl=a=>a.id+' · '+a.name;
+const bal=n=>bankData.journal.reduce((x,j)=>j.account===n?x+Number(j.debit||0)-Number(j.credit||0):x,0);
+let lock=false;const guard=f=>(...a)=>{if(lock)return;lock=true;setTimeout(()=>lock=false,700);return f(...a)};
+
+// Jurnal: setiap transaksi wajib seimbang (debit = kredit)
+function post(type,amount,lines,o={}){
+  lines=lines.filter(l=>l[1]>0||l[2]>0);
+  const d=lines.reduce((n,l)=>n+l[1],0),c=lines.reduce((n,l)=>n+l[2],0);
+  if(!(amount>0)||Math.abs(d-c)>.001)return {ok:false,error:'Jurnal tidak seimbang.'};
+  const id=bankNextTx(),at=Date.now();
+  bankData.transactions.unshift({id,type,amount,source:o.source||null,target:o.target||null,status:'SUCCESS',at,note:o.note||'',taskId:o.taskId||null});
+  lines.slice().reverse().forEach(l=>bankData.journal.unshift({id,account:l[0],debit:l[1],credit:l[2],at}));
+  bankAudit(type,id+' · '+R(amount)+(o.note?' · '+o.note:''));return {ok:true,id};
+}
+
+// ---------- Deposito ----------
+const depInt=d=>Math.round(d.principal*d.rate/100*d.tenor/12);
+function openDeposit(r,taskId,dry){
+  const s=S(),a=acct(r.accountId);
+  if(taskId&&s.deposits.some(x=>x.taskId===taskId))return {ok:true,dup:true};
+  if(!a||a.status!=='ACTIVE')return {ok:false,error:'Rekening tidak aktif.'};
+  const rate=s.cfg.dep[r.tenor];if(rate===undefined||rate===null||!Number.isFinite(Number(rate))||Number(rate)<0)return {ok:false,error:'Tenor tidak tersedia.'};
+  if(!(r.amount>=s.cfg.depMin))return {ok:false,error:'Minimal deposito '+R(s.cfg.depMin)+'.'};
+  if(a.balance<r.amount)return {ok:false,error:'Saldo tidak mencukupi. Tersedia '+R(a.balance)+'.'};
+  if(dry)return {ok:true};
+  const id='DEP-'+String(++s.depSeq).padStart(5,'0');
+  const p=post('DEPOSITO',r.amount,[[lbl(a),r.amount,0],['Simpanan Deposito',0,r.amount]],{source:a.id,note:id+' · '+r.tenor+' bln',taskId});if(!p.ok)return p;
+  a.balance-=r.amount;s.deposits.unshift({id,account:a.id,principal:r.amount,tenor:r.tenor,rate,start:s.month,maturity:s.month+r.tenor,status:'AKTIF',taskId:taskId||null,created:Date.now()});
+  bankSave();return {ok:true,id};
+}
+function settleDeposit(d,early){
+  const a=acct(d.account),s=S();if(!a||a.status!=='ACTIVE'||d.status!=='AKTIF')return false;
+  if(!early){const i=depInt(d),tot=d.principal+i;
+    if(!post('DEPOSITO_CAIR',tot,[['Simpanan Deposito',d.principal,0],['Beban Bunga Deposito',i,0],[lbl(a),0,tot]],{target:a.id,note:d.id+' jatuh tempo'}).ok)return false;
+    a.balance+=tot;d.status='CAIR';d.paid=tot}
+  else{const pen=Math.round(d.principal*s.cfg.penalty/100),net=d.principal-pen;
+    if(!post('DEPOSITO_CAIR',d.principal,[['Simpanan Deposito',d.principal,0],[lbl(a),0,net],['Pendapatan Penalti',0,pen]],{target:a.id,note:d.id+' dicairkan dini'}).ok)return false;
+    a.balance+=net;d.status='CAIR_DINI';d.paid=net}
+  bankSave();return true;
+}
+
+// ---------- Pinjaman (bunga flat, angsuran bulanan) ----------
+const calc=(p,t,r)=>{const i=Math.round(p*r/100*t/12);return {interest:i,total:p+i,inst:Math.round((p+i)/t)}};
+const loanOpen=id=>S().loans.filter(l=>l.account===id&&l.status!=='LUNAS');
+function loanLimit(id){const s=S(),a=acct(id);if(!a)return 0;const dep=s.deposits.filter(d=>d.account===id&&d.status==='AKTIF').reduce((n,d)=>n+d.principal,0);return Math.max(0,Math.min(s.cfg.loanMax,5*(a.balance+dep))-loanOpen(id).reduce((n,l)=>n+l.remP,0))}
+function openLoan(r,taskId,dry){
+  const s=S(),a=acct(r.accountId);
+  if(taskId&&s.loans.some(x=>x.taskId===taskId))return {ok:true,dup:true};
+  if(!a||a.status!=='ACTIVE')return {ok:false,error:'Rekening tidak aktif.'};
+  if(![6,12,24].includes(r.tenor))return {ok:false,error:'Tenor tidak tersedia.'};
+  if(!(r.amount>=1000000))return {ok:false,error:'Minimal pinjaman '+R(1000000)+'.'};
+  if(loanOpen(a.id).some(l=>l.status==='MENUNGGAK'))return {ok:false,error:'Ada pinjaman menunggak pada rekening ini.'};
+  if(loanOpen(a.id).length>=3)return {ok:false,error:'Maksimal 3 pinjaman aktif per rekening.'};
+  const lim=loanLimit(a.id);if(r.amount>lim)return {ok:false,error:'Melebihi plafon tersedia '+R(lim)+'.'};
+  if(dry)return {ok:true};
+  const c=calc(r.amount,r.tenor,s.cfg.loanRate),id='LOAN-'+String(++s.loanSeq).padStart(5,'0');
+  const p=post('PINJAMAN',r.amount,[['Piutang Pinjaman',r.amount,0],[lbl(a),0,r.amount]],{target:a.id,note:id+' · '+r.tenor+' bln',taskId});if(!p.ok)return p;
+  a.balance+=r.amount;s.loans.unshift({id,account:a.id,principal:r.amount,tenor:r.tenor,rate:s.cfg.loanRate,inst:c.inst,remP:r.amount,remI:c.interest,paid:0,start:s.month,status:'AKTIF',missed:0,taskId:taskId||null,created:Date.now()});
+  bankSave();return {ok:true,id};
+}
+function payInst(L){
+  const a=acct(L.account);if(!a||a.status!=='ACTIVE'||L.paid>=L.tenor)return false;
+  const last=L.paid===L.tenor-1,pp=last?L.remP:Math.min(L.remP,Math.round(L.principal/L.tenor)),ii=last?L.remI:Math.min(L.remI,Math.max(0,L.inst-pp)),amt=pp+ii;
+  if(amt<=0||a.balance<amt)return false;
+  if(!post('ANGSURAN',amt,[[lbl(a),amt,0],['Piutang Pinjaman',0,pp],['Pendapatan Bunga Pinjaman',0,ii]],{source:a.id,note:L.id+' angsuran '+(L.paid+1)+'/'+L.tenor}).ok)return false;
+  a.balance-=amt;L.paid++;L.remP-=pp;L.remI-=ii;if(L.paid>=L.tenor)L.status='LUNAS';bankSave();return true;
+}
+
+// ---------- Kartu debit virtual ----------
+function issueCard(r,taskId,dry){
+  const s=S(),a=acct(r.accountId),fee=s.cfg.cardFee;
+  if(taskId&&s.cards.some(x=>x.taskId===taskId))return {ok:true,dup:true};
+  if(!a||a.status!=='ACTIVE')return {ok:false,error:'Rekening tidak aktif.'};
+  if(!(r.limit>=100000))return {ok:false,error:'Limit harian minimal '+R(100000)+'.'};
+  if(a.balance<fee)return {ok:false,error:'Saldo tidak cukup untuk biaya penerbitan '+R(fee)+'.'};
+  if(dry)return {ok:true};
+  const id='CRD-'+String(++s.cardSeq).padStart(5,'0');let num;do{num='9999'+Array.from({length:12},()=>Math.floor(Math.random()*10)).join('')}while(s.cards.some(c=>c.num===num));
+  if(fee>0){const p=post('KARTU_BIAYA',fee,[[lbl(a),fee,0],['Pendapatan Biaya Layanan',0,fee]],{source:a.id,note:id+' biaya penerbitan',taskId});if(!p.ok)return p;a.balance-=fee}
+  const e=new Date();e.setFullYear(e.getFullYear()+3);
+  s.cards.unshift({id,account:a.id,num,exp:String(e.getMonth()+1).padStart(2,'0')+'/'+String(e.getFullYear()).slice(-2),limit:r.limit,status:'AKTIF',day:'',spent:0,taskId:taskId||null,created:Date.now()});
+  bankAudit('KARTU_TERBIT',id+' · '+lbl(a));bankSave();return {ok:true,id};
+}
+function cardSpend(cid,merchant,amt){
+  const s=S(),c=s.cards.find(x=>x.id===cid),a=c&&acct(c.account),today=bankLocalDate(Date.now());
+  if(!c||c.status!=='AKTIF')return alert('Kartu tidak aktif.');if(!a||a.status!=='ACTIVE')return alert('Rekening tidak aktif.');
+  if(!(amt>0))return alert('Nominal tidak valid.');if(c.day!==today){c.day=today;c.spent=0}
+  if(c.spent+amt>c.limit)return alert('Melebihi limit harian. Sisa limit '+R(c.limit-c.spent)+'.');
+  if(a.balance<amt)return alert('Saldo tidak mencukupi.');
+  const p=post('BELANJA_KARTU',amt,[[lbl(a),amt,0],[KAS,0,amt]],{source:a.id,note:c.id+' · '+(merchant||'Merchant virtual')});
+  if(!p.ok)return alert(p.error);a.balance-=amt;c.spent+=amt;bankSave();log(p.id+' · belanja kartu '+R(amt));renderS6();
+}
+
+// ---------- Waktu simulasi, gaji, kinerja ----------
+const handled=n=>tasks.reduce((c,t)=>c+t.history.filter(h=>h.staff===n).length,0);
+const doneBy=n=>tasks.filter(t=>t.status==='COMPLETED'&&t.history.some(h=>h.staff===n)).length;
+function payroll(){
+  const s=S(),rows=[];let tot=0;
+  staff.forEach(m=>{const h=handled(m.name);if(h<(s.mark[m.name]||0))s.mark[m.name]=h;const pct=Math.min(20,Math.floor((h-(s.mark[m.name]||0))/5)*2),base=s.cfg.sal[m.role]||0,pay=Math.round(base*(1+pct/100));s.mark[m.name]=h;rows.push({name:m.name,role:m.label,base,bonus:pay-base,pay});tot+=pay});
+  if(tot>0)post('GAJI',tot,[['Beban Gaji',tot,0],[KAS,0,tot]],{note:'Gaji virtual bulan ke-'+s.month});
+  s.payroll.unshift({month:s.month,total:tot,rows});s.payroll=s.payroll.slice(0,12);
+}
+function advance(n){
+  for(let k=0;k<n;k++){const s=S();s.month++;
+    s.deposits.filter(d=>d.status==='AKTIF'&&d.maturity<=s.month).forEach(d=>{if(!settleDeposit(d,false))log(d.id+' jatuh tempo tetapi rekening tidak aktif')});
+    s.loans.filter(L=>L.status!=='LUNAS').forEach(L=>{const due=()=>Math.min(L.tenor-L.paid,s.month-L.start-L.paid);while(due()>0&&payInst(L));L.missed=Math.max(0,due());if(L.status!=='LUNAS')L.status=L.missed>0?'MENUNGGAK':'AKTIF'});
+    payroll();log('Waktu simulasi maju ke bulan '+s.month);
+  }
+  bankAudit('WAKTU_SIMULASI','Bulan simulasi '+S().month);bankSave();renderS6();
+}
+
+// ---------- Ekspansi: Lantai 4 ----------
+function buildF4(){
+  if(fl[4])return;fl[4]=new THREE.Group();fl[4].position.y=FH*3;scene.add(fl[4]);grids[4]=mkGrid();
+  mkFloor(4,'LANTAI 4 · PRODUCT & WEALTH CENTER');
+  box(.9,.02,.9,trim,18.5,.02,8.5,fl[4]);textPlane('LIFT',1.1,.28,'#344b5b',18.5,1.5,9.65,fl[4]);
+  officeDesk(6,-8,'RELATIONSHIP MANAGER',fl[4]);officeDesk(11,-8,'KREDIT & PINJAMAN',fl[4]);officeDesk(16,-8,'DEPOSITO & KARTU',fl[4]);
+  for(const x of [4,9,14])box(2.6,.5,1,wood,x+1.5,.25,-2.5,fl[4]);textPlane('LOUNGE PRODUK',3,.3,'#344b5b',10.5,1.1,-1.8,fl[4]);
+  [[6,-8],[11,-8],[16,-8]].forEach(([x,z])=>setBF(4,x,z));
+}
+function unlockF4(silent){
+  const s=S();buildF4();s.floor4=true;fl[4].visible=viewMode==='all'||viewMode>=4;
+  if(!staff.some(m=>m.role==='rm')){
+    const m=makeChar({name:'Maya',label:'Relationship Manager',role:'rm',skin:'#f5cba7',hair:'#222222',shirt:'#b9770e',pants:'#2c3e50',apron:'#ecf0f1',hat:'#c39a58',home:[6,-7]});
+    m.f=4;m.by=FH*3;m.g.position.set(6.5,m.by,-6.5);staffQueues.rm=[];STAFF_FLOOR.rm=4;staff.push(m);
+  }
+  window.__s6RM=true;$('#flL4').hidden=false;if(!silent)log('Lantai 4 dibuka. Relationship Manager Maya bergabung.');
+}
+
+// ---------- Integrasi dengan workflow staf ----------
+const _exec=executeBankRequest;
+executeBankRequest=function(task){
+  const r=task.bankRequest;if(!r||!r.s6)return _exec(task);
+  const res=r.s6==='DEPOSITO'?openDeposit(r,task.id):r.s6==='PINJAMAN'?openLoan(r,task.id):r.s6==='KARTU'?issueCard(r,task.id):{ok:false,error:'Jenis produk tidak dikenal'};
+  if(res.ok&&!res.dup){task.bankTransactionId=res.id;log(task.id+' menghasilkan '+res.id)}
+  renderS6();return res;
+};
+function request(service,amount,req,force){
+  if(activeFlows>=5)return alert('Antrean sedang penuh. Tunggu sampai ada nasabah selesai dilayani.');
+  req.forceApproval=!!force;window.__nextBankRequest=req;
+  if(spawnCustomer(service,amount)){openDash('tasks');log('Permintaan '+service.toLowerCase()+' diteruskan ke staf.')}
+}
+const _st=showTab;showTab=function(t){_st(t);if(t==='productsv'||t==='economyv')renderS6()};window.showTab=showTab;
+const _sf=setFloor;setFloor=function(m){_sf(m);const u=S().floor4&&fl[4];if(fl[4])fl[4].visible=!!(u&&(m==='all'||m>=4));if(m==='all'&&u){goal.ty=FH*1.5+.8;goal.size=46}};
+addEventListener('keydown',e=>{if(e.key==='4'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&S().floor4&&!/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName))setFloor(4)});
+
+// ---------- Tampilan ----------
+const opt=l=>l.map(a=>`<option value="${esc(a.id)}">${esc(a.id)} · ${esc(a.name)} — ${R(a.balance)}</option>`).join('');
+const st=(txt,k)=>`<span class="status ${k||''}">${esc(txt)}</span>`;
+const val=id=>document.getElementById(id)?.value;
+function renderProducts(){
+  const root=$('#productsv');if(!root||root.hidden)return;const ae=document.activeElement;if(root.contains(ae)&&ae.matches('input,select'))return;
+  const s=S(),ac=actv(),o=opt(ac),snap={};root.querySelectorAll('input[id],select[id]').forEach(e=>snap[e.id]=e.value);
+  const dA=s.deposits.filter(d=>d.status==='AKTIF'),lA=s.loans.filter(l=>l.status!=='LUNAS'),cA=s.cards.filter(c=>c.status==='AKTIF');
+  const dTot=dA.reduce((n,d)=>n+d.principal,0),lTot=lA.reduce((n,l)=>n+l.remP,0),rm=window.__s6RM?'Diproses Relationship Manager (Lantai 4).':'Diproses Customer Service. Buka Lantai 4 untuk Relationship Manager.';
+  root.innerHTML=`<div class="kpi"><div><span>Deposito aktif</span><b>${dA.length} · ${R(dTot)}</b></div><div><span>Pokok pinjaman berjalan</span><b>${R(lTot)}</b></div><div><span>Kartu aktif</span><b>${cA.length}</b></div><div><span>Bulan simulasi</span><b>${s.month}</b></div></div>
+  <h4>Deposito</h4><div class="taskcard"><label>Rekening sumber dana</label><select class="field" id="pdAcc">${o}</select><label>Nominal (Rp)</label><input class="field" id="pdAmt" type="number" min="${s.cfg.depMin}" step="500000" value="${s.cfg.depMin*2}"><label>Tenor</label><select class="field" id="pdTen">${Object.entries(s.cfg.dep).map(([t,r])=>`<option value="${t}">${t} bulan · ${r}% per tahun</option>`).join('')}</select><button class="action good" data-act="dep">Ajukan melalui staf</button><div><small>Dana dipindahkan dari saldo ke simpanan berjangka dan cair otomatis dengan bunga saat jatuh tempo. ${rm}</small></div></div>
+  ${s.deposits.slice(0,10).map(d=>`<div class="taskcard"><div class="taskhead"><b>${esc(d.id)} · ${R(d.principal)}</b>${st(d.status,d.status==='AKTIF'?'wait':d.status==='CAIR'?'good':'bad')}</div><div class="taskmeta">${esc(d.account)} · ${d.tenor} bln · ${d.rate}% · jatuh tempo bulan ${d.maturity}<br>Bunga saat tempo: ${R(depInt(d))}${d.paid?' · Diterima '+R(d.paid):''}</div>${d.status==='AKTIF'?`<div class="row" style="margin-top:8px"><button class="action bad" data-act="depEarly" data-id="${esc(d.id)}">Cairkan lebih awal (penalti ${s.cfg.penalty}%)</button></div>`:''}</div>`).join('')||'<small>Belum ada deposito.</small>'}
+  <h4>Pinjaman</h4><div class="taskcard"><label>Rekening penerima</label><select class="field" id="plAcc">${o}</select><label>Nominal (Rp)</label><input class="field" id="plAmt" type="number" min="1000000" step="500000" value="5000000"><label>Tenor</label><select class="field" id="plTen"><option value="6">6 bulan</option><option value="12">12 bulan</option><option value="24">24 bulan</option></select><div id="plPrev" class="taskmeta"></div><button class="action good" data-act="loan">Ajukan (wajib persetujuan Owner)</button><div><small>Bunga flat ${s.cfg.loanRate}% per tahun. Plafon = 5× (saldo + deposito), maksimal ${R(s.cfg.loanMax)}, dikurangi pinjaman berjalan. ${rm}</small></div></div>
+  ${s.loans.slice(0,10).map(l=>`<div class="taskcard"><div class="taskhead"><b>${esc(l.id)} · ${R(l.principal)}</b>${st(l.status,l.status==='LUNAS'?'good':l.status==='MENUNGGAK'?'bad':'wait')}</div><div class="taskmeta">${esc(l.account)} · angsuran ${R(l.inst)}/bln · terbayar ${l.paid}/${l.tenor}<br>Sisa pokok ${R(l.remP)} · sisa bunga ${R(l.remI)}${l.missed?' · <b>tunggakan '+l.missed+' bln</b>':''}</div>${l.status!=='LUNAS'?`<div class="row" style="margin-top:8px"><button class="action" data-act="pay" data-id="${esc(l.id)}">Bayar angsuran berikutnya</button></div>`:''}</div>`).join('')||'<small>Belum ada pinjaman.</small>'}
+  <h4>Kartu debit virtual</h4><div class="taskcard"><label>Rekening</label><select class="field" id="pcAcc">${o}</select><label>Limit belanja harian (Rp)</label><input class="field" id="pcLim" type="number" min="100000" step="100000" value="1000000"><button class="action good" data-act="card">Terbitkan kartu (biaya ${R(s.cfg.cardFee)})</button><div><small>Kartu simulasi, bukan nomor kartu sungguhan.</small></div></div>
+  ${s.cards.slice(0,10).map(c=>`<div class="taskcard"><div class="taskhead"><b>${esc(c.id)} · ${esc(c.num.slice(0,4))} •••• •••• ${esc(c.num.slice(-4))}</b>${st(c.status,c.status==='AKTIF'?'good':'bad')}</div><div class="taskmeta">${esc(c.account)} · berlaku ${esc(c.exp)} · limit harian ${R(c.limit)}</div><div class="row" style="margin-top:8px"><button class="action ${c.status==='AKTIF'?'bad':'good'}" data-act="blk" data-id="${esc(c.id)}">${c.status==='AKTIF'?'Blokir':'Aktifkan'}</button></div></div>`).join('')||'<small>Belum ada kartu.</small>'}
+  ${cA.length?`<div class="taskcard"><b>Belanja virtual</b><label>Kartu</label><select class="field" id="pxCard">${cA.map(c=>`<option value="${esc(c.id)}">${esc(c.id)} · ${esc(c.num.slice(-4))} (${esc(c.account)})</option>`).join('')}</select><input class="field" id="pxMer" maxlength="40" placeholder="Nama merchant (opsional)"><input class="field" id="pxAmt" type="number" min="1000" step="1000" value="50000"><button class="action" data-act="spend">Bayar dengan kartu</button></div>`:''}
+  <h4>Tarif & kebijakan</h4><div class="taskcard"><label>Bunga deposito 3 / 6 / 12 bln (% per tahun)</label><div class="row"><input class="field" id="cfD3" type="number" step=".1" min="0" value="${s.cfg.dep[3]}"><input class="field" id="cfD6" type="number" step=".1" min="0" value="${s.cfg.dep[6]}"><input class="field" id="cfD12" type="number" step=".1" min="0" value="${s.cfg.dep[12]}"></div><label>Bunga pinjaman flat (% per tahun)</label><input class="field" id="cfLoan" type="number" step=".1" min="0" value="${s.cfg.loanRate}"><label>Biaya kartu (Rp) · Penalti deposito dini (%)</label><div class="row"><input class="field" id="cfFee" type="number" min="0" step="1000" value="${s.cfg.cardFee}"><input class="field" id="cfPen" type="number" min="0" step=".1" value="${s.cfg.penalty}"></div><label>Plafon maksimal pinjaman (Rp)</label><input class="field" id="cfMax" type="number" min="0" step="1000000" value="${s.cfg.loanMax}"><button class="action good" data-act="cfg">Simpan tarif</button><div><small>Berlaku untuk produk baru; produk yang sudah berjalan memakai tarif saat dibuat.</small></div></div>`;
+  for(const k in snap){const e=document.getElementById(k);if(e&&!e.id.startsWith('cf'))e.value=snap[k]}
+  prev();
+}
+function prev(){const e=document.getElementById('plPrev');if(!e)return;const s=S(),a=Number(val('plAmt')),t=Number(val('plTen')),id=val('plAcc');if(!(a>0)){e.textContent='';return}const c=calc(a,t,s.cfg.loanRate);e.innerHTML=`Angsuran ${R(c.inst)}/bln · total bunga ${R(c.interest)} · total bayar ${R(c.total)}<br>Plafon tersedia rekening ini: <b>${R(id?loanLimit(id):0)}</b>`}
+const acts={
+  dep(){const r={s6:'DEPOSITO',accountId:val('pdAcc'),amount:Number(val('pdAmt')),tenor:Number(val('pdTen'))},c=openDeposit(r,null,true);if(!c.ok)return alert(c.error);request('Deposito',r.amount,r)},
+  loan(){const r={s6:'PINJAMAN',accountId:val('plAcc'),amount:Number(val('plAmt')),tenor:Number(val('plTen'))},c=openLoan(r,null,true);if(!c.ok)return alert(c.error);request('Pinjaman',r.amount,r,true)},
+  card(){const r={s6:'KARTU',accountId:val('pcAcc'),limit:Number(val('pcLim'))},c=issueCard(r,null,true);if(!c.ok)return alert(c.error);request('Kartu virtual',0,r)},
+  depEarly(b){const d=S().deposits.find(x=>x.id===b.id);if(!d||!confirm('Cairkan '+d.id+' sebelum jatuh tempo? Bunga hangus dan dikenakan penalti '+S().cfg.penalty+'%.'))return;if(!settleDeposit(d,true))alert('Gagal mencairkan: rekening tidak aktif.');else log(d.id+' dicairkan lebih awal');renderS6()},
+  pay(b){const L=S().loans.find(x=>x.id===b.id);if(!L)return;if(!payInst(L))alert('Angsuran gagal: saldo tidak cukup atau rekening tidak aktif.');else log(L.id+' angsuran dibayar');renderS6()},
+  blk(b){const c=S().cards.find(x=>x.id===b.id);if(!c)return;c.status=c.status==='AKTIF'?'DIBLOKIR':'AKTIF';bankAudit('KARTU_'+c.status,c.id);bankSave();renderS6()},
+  spend(){cardSpend(val('pxCard'),val('pxMer'),Number(val('pxAmt')))},
+  cfg(){const s=S(),n=id=>Number(val(id)),v={d3:n('cfD3'),d6:n('cfD6'),d12:n('cfD12'),l:n('cfLoan'),f:n('cfFee'),p:n('cfPen'),m:n('cfMax')};if(Object.values(v).some(x=>!Number.isFinite(x)||x<0))return alert('Nilai tidak valid.');
+    s.cfg.dep={3:v.d3,6:v.d6,12:v.d12};s.cfg.loanRate=v.l;s.cfg.cardFee=v.f;s.cfg.penalty=v.p;s.cfg.loanMax=v.m;bankAudit('PENGATURAN_PRODUK','Tarif produk diperbarui');bankSave();renderS6();alert('Tarif disimpan.')},
+  adv1(){advance(1)},adv3(){advance(3)},
+  cap(){const v=Number(val('ecCap'));if(!(v>0))return alert('Nominal tidak valid.');const p=post('MODAL',v,[[KAS,v,0],['Modal Owner',0,v]],{note:'Setoran modal Owner'});if(!p.ok)return alert(p.error);bankSave();renderS6()},
+  f4(){const s=S();if(s.floor4)return;if(kas()<s.cfg.expand)return alert('Kas tidak cukup. Tambahkan modal Owner terlebih dahulu.');if(!confirm('Bangun Lantai 4 seharga '+R(s.cfg.expand)+'?'))return;
+    const p=post('EKSPANSI',s.cfg.expand,[['Beban Ekspansi',s.cfg.expand,0],[KAS,0,s.cfg.expand]],{note:'Pembangunan Lantai 4'});if(!p.ok)return alert(p.error);unlockF4();bankSave();renderS6()}
+};
+const kas=()=>bal(KAS);
+function renderEconomy(){
+  const root=$('#economyv');if(!root||root.hidden)return;const ae=document.activeElement;if(root.contains(ae)&&ae.matches('input,select'))return;
+  const s=S(),inc=-(bal('Pendapatan Bunga Pinjaman')+bal('Pendapatan Biaya Layanan')+bal('Pendapatan Penalti')),exp=bal('Beban Bunga Deposito')+bal('Beban Gaji')+bal('Beban Ekspansi'),net=inc-exp,k=kas();
+  const pay=staff.reduce((n,m)=>n+(s.cfg.sal[m.role]||0),0);
+  root.innerHTML=`<div class="kpi"><div><span>Bulan simulasi</span><b>${s.month}</b></div><div><span>Kas bank virtual</span><b style="${k<0?'color:#ff8a80':''}">${k<0?'-':''}${R(Math.abs(k))}</b></div><div><span>Laba (rugi) bersih</span><b style="${net<0?'color:#ff8a80':''}">${net<0?'-':''}${R(Math.abs(net))}</b></div><div><span>Gaji dasar per bulan</span><b>${R(pay)}</b></div></div>
+  <div class="row" style="margin:10px 0"><button class="action good" data-act="adv1">⏩ Majukan 1 bulan</button><button class="action" data-act="adv3">⏩⏩ 3 bulan</button></div><small>Setiap bulan: deposito jatuh tempo dicairkan, angsuran pinjaman ditagih dari rekening, dan gaji staf dibayar.${k<0?' <b>Kas negatif, tambahkan modal Owner.</b>':''}</small>
+  <h4>Laba rugi (dari jurnal)</h4><div class="taskcard"><div class="ord"><span>Pendapatan bunga pinjaman</span><b>${R(-bal('Pendapatan Bunga Pinjaman'))}</b></div><div class="ord"><span>Biaya layanan kartu</span><b>${R(-bal('Pendapatan Biaya Layanan'))}</b></div><div class="ord"><span>Penalti deposito</span><b>${R(-bal('Pendapatan Penalti'))}</b></div><div class="ord"><span>Beban bunga deposito</span><b>${R(bal('Beban Bunga Deposito'))}</b></div><div class="ord"><span>Beban gaji</span><b>${R(bal('Beban Gaji'))}</b></div><div class="ord"><span>Beban ekspansi</span><b>${R(bal('Beban Ekspansi'))}</b></div></div>
+  <div class="row" style="margin-top:8px"><input class="field" id="ecCap" type="number" min="1" step="10000000" value="50000000" style="flex:1"><button class="action" data-act="cap">Setor modal Owner</button></div>
+  <h4>Ekspansi gedung</h4><div class="taskcard"><div class="taskhead"><b>Lantai 4 · Product & Wealth Center</b>${st(s.floor4?'TERBUKA':'TERKUNCI',s.floor4?'good':'wait')}</div><div class="taskmeta">Ruang Relationship Manager, kredit, deposito, dan kartu. Produk lanjutan diproses oleh Maya di lantai ini.<br>Biaya: ${R(s.cfg.expand)}</div>${s.floor4?'':'<div class="row" style="margin-top:8px"><button class="action good" data-act="f4">Bangun Lantai 4</button></div>'}</div>
+  <h4>Kinerja & gaji staf</h4>${staff.map(m=>{const h=handled(m.name),base=s.cfg.sal[m.role]||0,pct=Math.min(20,Math.floor(Math.max(0,h-(s.mark[m.name]||0))/5)*2);return `<div class="taskcard"><div class="taskhead"><b>${esc(m.name)} · ${esc(m.label)}</b>${st('Level '+(1+Math.floor(h/10)),'good')}</div><div class="bar" style="margin:6px 0"><i style="width:${(h%10)*10}%"></i></div><div class="taskmeta">${h} tahap ditangani · ${doneBy(m.name)} tugas selesai<br>Gaji dasar ${R(base)} · bonus kinerja berjalan ${pct}%</div></div>`}).join('')}
+  <h4>Riwayat penggajian</h4>${s.payroll.map(p=>`<div class="ord"><span><b>Bulan ${p.month}</b><br><small>${p.rows.length} staf</small></span><b>${R(p.total)}</b></div>`).join('')||'<small>Belum ada penggajian. Majukan waktu simulasi.</small>'}`;
+}
+function renderS6(){const s=S();const h=document.getElementById('hMonth');if(h)h.textContent=s.month;renderProducts();renderEconomy()}
+
+
+// ---------- Tahap 7: Member journey, satpam, teller/CS, admin approval ----------
+const MEMBER_KEY='nvb_member_journey_v1';
+let memberStore=(()=>{try{const x=JSON.parse(localStorage.getItem(MEMBER_KEY)||'{}');return {members:Array.isArray(x.members)?x.members:[],applications:Array.isArray(x.applications)?x.applications:[],session:x.session||null}}catch{return {members:[],applications:[],session:null}}})();
+const msave=()=>{try{localStorage.setItem(MEMBER_KEY,JSON.stringify(memberStore));return true}catch(e){alert('Penyimpanan portal gagal. Periksa ruang penyimpanan browser.');return false}};
+const mroot=document.getElementById('memberContent'),mshell=document.getElementById('memberShell');let mtab='home',mService='Pembukaan rekening';
+const mEsc=esc;
+function mMember(){return memberStore.members.find(x=>x.id===memberStore.session)||null}
+function mOpen(){
+ mshell.classList.add('show');
+ mshell.setAttribute('aria-hidden','false');
+ mRender();
+}
+window.__nvbMemberOpen=mOpen;
+function mClose(){mshell.classList.remove('show');mshell.setAttribute('aria-hidden','true')}
+function mSetTab(t){mtab=t;document.querySelectorAll('[data-mtab]').forEach(b=>b.classList.toggle('active',b.dataset.mtab===t));mRender()}
+function mRender(){const u=mMember();document.getElementById('memberIdentity').textContent=u?u.name:'Mode tamu';document.querySelectorAll('[data-mtab]').forEach(b=>b.classList.toggle('active',b.dataset.mtab===mtab));
+ if(mtab==='home'){
+  if(!u){mroot.innerHTML=`<div class="mHero"><h2>Selamat datang di Narayan Virtual Bank</h2><p>Mulai dari portal digital, lalu lanjutkan pengalaman layanan di kantor virtual.</p></div><div class="mGrid"><div class="mCard"><h3>Masuk sebagai member</h3><p>Gunakan email dan PIN simulasi yang telah didaftarkan.</p><label class="mLabel">Email</label><input class="mField" id="mlEmail" type="email" autocomplete="username" placeholder="nama@email.com"><label class="mLabel">PIN (4–8 digit)</label><input class="mField" id="mlPin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN simulasi"><button class="mAction" id="mLogin">Masuk</button></div><div class="mCard"><h3>Daftar member baru</h3><label class="mLabel">Nama lengkap</label><input class="mField" id="mrName" maxlength="60" placeholder="Nama lengkap"><label class="mLabel">Email</label><input class="mField" id="mrEmail" type="email" placeholder="nama@email.com"><label class="mLabel">Buat PIN (4–8 digit)</label><input class="mField" id="mrPin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN simulasi"><button class="mAction alt" id="mRegister">Daftar member</button></div></div><div class="mCallout">Ini adalah autentikasi lokal untuk simulasi prototipe. PIN tidak boleh digunakan ulang dari akun penting dan belum setara autentikasi server produksi.</div>`;
+   document.getElementById('mRegister').onclick=()=>{const name=document.getElementById('mrName').value.trim(),email=document.getElementById('mrEmail').value.trim().toLowerCase(),pin=document.getElementById('mrPin').value;if(name.length<2||!/^\S+@\S+\.\S+$/.test(email)||!/^\d{4,8}$/.test(pin))return alert('Isi nama, email valid, dan PIN 4–8 digit.');if(memberStore.members.some(x=>x.email===email))return alert('Email sudah terdaftar. Silakan masuk.');const m={id:'MBR-'+Date.now().toString(36).toUpperCase(),name,email,pin,created:Date.now()};memberStore.members.push(m);memberStore.session=m.id;if(!msave())return;mSetTab('home')};
+   document.getElementById('mLogin').onclick=()=>{const email=document.getElementById('mlEmail').value.trim().toLowerCase(),pin=document.getElementById('mlPin').value,m=memberStore.members.find(x=>x.email===email&&x.pin===pin);if(!m)return alert('Email atau PIN tidak cocok.');memberStore.session=m.id;if(!msave())return;mRender()};
+  }else{const apps=memberStore.applications.filter(a=>a.memberId===u.id);mroot.innerHTML=`<div class="mHero"><h2>Halo, ${mEsc(u.name)} 👋</h2><p>Satpam virtual siap menyambut. Pilih layanan untuk memulai kunjungan dan pantau prosesnya sampai selesai.</p><div class="mRow" style="margin-top:14px"><button class="mAction" id="mGoServices">Pilih layanan</button><button class="mAction alt" id="mLogout">Keluar akun</button></div></div><div class="mGrid"><div class="mCard"><h3>Aktivitas layanan</h3><b style="font-size:25px">${apps.length}</b><p>Total permohonan layanan kamu.</p></div><div class="mCard"><h3>Menunggu tindakan</h3><b style="font-size:25px">${apps.filter(a=>['PENDING_ADMIN','REVISION','QUEUED','PROCESSING'].includes(a.status)).length}</b><p>Permohonan yang belum selesai.</p></div></div><div class="mCard" style="margin-top:12px"><h3>Alur kunjungan</h3><div class="mSteps"><span class="done">1 Member</span><span>2 Satpam</span><span>3 Petugas</span><span>4 Admin</span><span>5 Konfirmasi</span></div><p class="mMuted">Setiap permohonan memiliki nomor layanan dan riwayat status.</p></div>`;document.getElementById('mGoServices').onclick=()=>mSetTab('services');document.getElementById('mLogout').onclick=()=>{memberStore.session=null;msave();mRender()}}
+ }else if(mtab==='services'){
+  if(!u){mroot.innerHTML='<div class="mEmpty">Masuk atau daftar terlebih dahulu untuk mengakses layanan member.</div>';return}
+  mroot.innerHTML=`<div class="mHero"><h2>Pilih layanan bank</h2><p>Satpam akan menyambut dan mengarahkan kamu ke petugas yang sesuai.</p></div><div class="mGrid">${[['Pembukaan rekening','Buat rekening tabungan baru.'],['Setoran','Menambah saldo rekening.'],['Penarikan','Mengambil dana dari rekening.'],['Transfer','Mengirim dana ke rekening lain.'],['Deposito','Membuka simpanan berjangka.'],['Pinjaman','Mengajukan fasilitas pinjaman simulasi.'],['Kartu virtual','Menerbitkan kartu debit virtual.'],['Konsultasi','Bertanya kepada petugas bank.']].map(([n,d])=>`<button class="mCard" data-msvc="${n}" style="text-align:left;cursor:pointer;color:#20313e"><h3>${n}</h3><p>${d}</p><b style="color:#176b55">Pilih layanan →</b></button>`).join('')}</div><div id="mServiceForm" style="margin-top:14px"></div>`;
+  document.querySelectorAll('[data-msvc]').forEach(b=>b.onclick=()=>mServiceForm(b.dataset.msvc));
+ }else if(mtab==='status'){
+  if(!u){mroot.innerHTML='<div class="mEmpty">Masuk untuk melihat status layanan.</div>';return}
+  const apps=memberStore.applications.filter(a=>a.memberId===u.id).sort((a,b)=>b.created-a.created);
+  mroot.innerHTML=`<div class="mHero"><h2>Status & riwayat</h2><p>Pantau antrean, pemeriksaan Admin, revisi, persetujuan, dan penyelesaian layanan.</p></div>${apps.length?`<div class="mList">${apps.map(a=>`<article class="mCard"><div class="mRow" style="justify-content:space-between"><b>${mEsc(a.id)} · ${mEsc(a.service)}</b><span class="mStatus ${a.status==='APPROVED'||a.status==='COMPLETED'?'good':a.status==='REJECTED'?'bad':'wait'}">${mEsc(a.status)}</span></div><p>${mEsc(a.summary||'Permohonan layanan')}<br><small>${new Date(a.created).toLocaleString('id-ID')}</small></p><div class="mSteps">${['REGISTERED','ARRIVED','QUEUED','PROCESSING','PENDING_ADMIN','APPROVED','COMPLETED'].map((st,i)=>`<span class="${a.progress>=i?'done':''}">${['Daftar','Tiba','Antre','Proses','Admin','ACC','Selesai'][i]}</span>`).join('')}</div>${a.status==='REVISION'?`<div class="mCallout mDanger">Perlu perbaikan: ${mEsc(a.note||'Silakan lengkapi data.')}</div><button class="mAction" data-revise="${a.id}">Lengkapi ulang</button>`:''}</article>`).join('')}</div>`:'<div class="mEmpty">Belum ada layanan. Pilih layanan untuk memulai kunjungan.</div>'}`;
+  document.querySelectorAll('[data-revise]').forEach(b=>b.onclick=()=>mRevise(b.dataset.revise));
+ }else if(mtab==='admin'){
+  const pending=memberStore.applications.filter(a=>['PENDING_ADMIN','REVISION'].includes(a.status));mroot.innerHTML=`<div class="mHero"><h2>Panel Admin</h2><p>Pemeriksaan formulir, keputusan ACC, penolakan, dan permintaan revisi.</p></div><div class="mCallout">Panel Admin ini adalah panel simulasi lokal tanpa otorisasi server. Pada produksi, wajib dipisahkan dengan login dan hak akses admin.</div><h3>Permohonan perlu ditinjau (${pending.length})</h3>${pending.length?`<div class="mList">${pending.map(a=>`<article class="mCard"><div class="mRow" style="justify-content:space-between"><b>${mEsc(a.id)} · ${mEsc(a.service)}</b><span class="mStatus wait">${a.status}</span></div><p>Member: ${mEsc(memberStore.members.find(x=>x.id===a.memberId)?.name||'Member')}<br>Email: ${mEsc(memberStore.members.find(x=>x.id===a.memberId)?.email||'-')}<br>${mEsc(a.summary||'')}</p>${a.service==='Pembukaan rekening'?`<p>Jenis: ${mEsc(a.form?.type||'Reguler')} · Identitas: ${mEsc(a.form?.identity||'-')}</p>`:''}<label class="mLabel">Catatan Admin (untuk revisi/penolakan)</label><input class="mField" id="note-${a.id}" maxlength="180" placeholder="Alasan keputusan"><div class="mRow"><button class="mAction" data-admin="approve" data-id="${a.id}">ACC</button><button class="mAction warn" data-admin="revise" data-id="${a.id}">Minta revisi</button><button class="mAction" style="background:#a8463e" data-admin="reject" data-id="${a.id}">Tolak</button></div></article>`).join('')}</div>`:'<div class="mEmpty">Tidak ada formulir yang menunggu keputusan.</div>'}<h3 style="margin-top:20px">Semua permohonan</h3><p class="mMuted">Total ${memberStore.applications.length} · member terdaftar ${memberStore.members.length}</p>`;
+  document.querySelectorAll('[data-admin]').forEach(b=>b.onclick=()=>mAdminDecision(b.dataset.id,b.dataset.admin));
+ }
+}
+function mServiceForm(service){mService=service;const root=document.getElementById('mServiceForm');if(!root)return;const accounts=bankData.accounts.filter(a=>a.status==='ACTIVE');root.innerHTML=`<div class="mCard"><div class="mRow" style="justify-content:space-between"><h3 style="margin:0">Formulir ${mEsc(service)}</h3><span class="mStatus">Tahap 1 · Member</span></div><p>Isi data secukupnya. Setelah dikirim, satpam akan menyambut dan mengarahkan permohonan.</p>${service==='Pembukaan rekening'?`<label class="mLabel">Nama pada rekening</label><input class="mField" id="mfName" maxlength="60" value="${mEsc(mMember()?.name||'')}"><label class="mLabel">Jenis rekening</label><select class="mField" id="mfType"><option>Tabungan</option><option>Reguler</option><option>Bisnis</option></select><label class="mLabel">Nomor identitas simulasi</label><input class="mField" id="mfIdentity" maxlength="24" placeholder="Masukkan nomor identitas contoh">`:`<label class="mLabel">Rekening</label><select class="mField" id="mfAccount"><option value="">Pilih rekening</option>${accounts.map(a=>`<option value="${mEsc(a.id)}">${mEsc(a.id)} · ${mEsc(a.name)} · ${fmt(a.balance)}</option>`).join('')}</select><label class="mLabel">Nominal (Rp)</label><input class="mField" id="mfAmount" type="number" min="1" step="10000" value="250000">${service==='Transfer'?'<label class="mLabel">Rekening tujuan</label><select class="mField" id="mfTarget"><option value="">Pilih rekening tujuan</option>'+accounts.map(a=>`<option value="${mEsc(a.id)}">${mEsc(a.id)} · ${mEsc(a.name)}</option>`).join('')+'</select>':''}`}<label class="mLabel">Catatan</label><textarea class="mField" id="mfNote" maxlength="180" rows="2" placeholder="Catatan tambahan (opsional)"></textarea><div class="mRow"><button class="mAction" id="mSubmitService">Kirim & masuk bank</button><button class="mAction alt" id="mCancelService">Batal</button></div><div class="mCallout">Simulasi layanan. Data pengajuan akan masuk ke antrean dan panel Admin jika memerlukan persetujuan.</div></div>`;
+ document.getElementById('mCancelService').onclick=()=>root.innerHTML='';document.getElementById('mSubmitService').onclick=()=>mSubmit(service);
+}
+function mSubmit(service){const u=mMember();if(!u)return;let form={},summary='';if(service==='Pembukaan rekening'){const name=document.getElementById('mfName').value.trim(),identity=document.getElementById('mfIdentity').value.trim();if(name.length<2||identity.length<4)return alert('Nama dan nomor identitas simulasi wajib diisi.');form={name,type:document.getElementById('mfType').value,identity};summary=`Pembukaan rekening ${form.type} atas nama ${name}`}
+ else {const account=document.getElementById('mfAccount')?.value,amount=Number(document.getElementById('mfAmount')?.value||0),target=document.getElementById('mfTarget')?.value||'';if(!account||!(amount>0)||!Number.isFinite(amount))return alert('Pilih rekening dan nominal yang valid.');if(service==='Transfer'&&(!target||target===account))return alert('Pilih rekening tujuan yang berbeda.');form={account,amount,target};summary=`${service} ${fmt(amount)} · ${account}${target?' → '+target:''}`}
+ const app={id:'SRV-'+String(Date.now()).slice(-9),memberId:u.id,service,form,summary,note:document.getElementById('mfNote')?.value||'',status:'QUEUED',progress:2,created:Date.now(),history:[{status:'REGISTERED',at:Date.now(),actor:'Member'},{status:'ARRIVED',at:Date.now(),actor:'Satpam'}]};memberStore.applications.unshift(app);if(!msave())return;log('Member '+u.name+' mengajukan '+service+' ('+app.id+'). Satpam menyambut nasabah.');
+ // Trigger visual customer flow in the 3D branch for service categories already supported.
+ if(['Setoran','Penarikan','Transfer','Konsultasi'].includes(service)){let req=null;if(service!=='Konsultasi')req={type:service==='Setoran'?'SETORAN':service==='Penarikan'?'PENARIKAN':'TRANSFER',amount:form.amount,sourceId:service==='Setoran'?null:form.account,targetId:service==='Setoran'?form.account:service==='Transfer'?form.target:null,note:'Member '+u.name+' · '+app.id};window.__nextBankRequest=req;spawnCustomer(service,service==='Konsultasi'?0:form.amount);if(tasks[0]){tasks[0].memberAppId=app.id;app.taskId=tasks[0].id}app.status='PROCESSING';app.progress=3;app.history.push({status:'PROCESSING',at:Date.now(),actor:'Teller'});msave()}
+ alert('Permohonan terkirim. Satpam virtual menyambut dan mengarahkan layanan kamu.');mSetTab('status');
+}
+function mRevise(id){const a=memberStore.applications.find(x=>x.id===id),u=mMember();if(!a||!u)return;const correction=prompt('Lengkapi/perbaiki permohonan '+a.id+'. Tuliskan data atau keterangan perbaikan:');if(correction===null)return;if(correction.trim().length<3)return alert('Keterangan perbaikan minimal 3 karakter.');a.note=correction.trim();a.status='PENDING_ADMIN';a.progress=4;a.history.push({status:'PENDING_ADMIN',at:Date.now(),actor:'Member',detail:correction.trim()});msave();mRender()}
+function mAdminDecision(id,decision){const a=memberStore.applications.find(x=>x.id===id);if(!a)return;const note=document.getElementById('note-'+id)?.value.trim()||'';if(decision==='approve'){
+ if(a.service==='Pembukaan rekening'&&!a.createdAccount){const r=bankAddAccount(a.form.name,a.form.type,0);if(!r.ok)return alert(r.error);a.createdAccount=r.account.id;bankSave();renderDashboard();renderOwnerPanels()}
+ a.status='APPROVED';a.progress=5;a.note='Disetujui Admin';a.history.push({status:'APPROVED',at:Date.now(),actor:'Admin'});if(a.service==='Pembukaan rekening'){a.status='COMPLETED';a.progress=6;a.history.push({status:'COMPLETED',at:Date.now(),actor:'Customer Service'});a.note='Rekening aktif: '+a.createdAccount}
+ }else if(decision==='revise'){a.status='REVISION';a.progress=4;a.note=note||'Mohon lengkapi data yang belum sesuai.';a.history.push({status:'REVISION',at:Date.now(),actor:'Admin'})}
+ else{a.status='REJECTED';a.progress=4;a.note=note||'Permohonan ditolak Admin.';a.history.push({status:'REJECTED',at:Date.now(),actor:'Admin'})}
+ if(!msave())return;log('Admin '+decision+' permohonan '+id);mRender();
+}
+document.getElementById('memberClose').addEventListener('click',mClose);mshell.addEventListener('click',e=>{if(e.target===mshell)mClose()});document.querySelectorAll('[data-mtab]').forEach(b=>b.onclick=()=>mSetTab(b.dataset.mtab));document.addEventListener('keydown',e=>{if(e.key==='Escape'&&mshell.classList.contains('show'))mClose()});
+
+// ---------- Inisialisasi ----------
+['productsv','economyv'].forEach(id=>{const r=document.getElementById(id);r.onclick=e=>{const b=e.target.closest('[data-act]');if(b&&acts[b.dataset.act])guard(acts[b.dataset.act])(b.dataset)};r.oninput=e=>{if(/^pl/.test(e.target.id))prev()}});
+$('#bProducts').onclick=()=>{openDash('productsv');closeMenus()};$('#bEconomy').onclick=()=>{openDash('economyv');closeMenus()};
+const s0=S();
+if(!s0.capital){post('MODAL',500000000,[[KAS,500000000,0],['Modal Owner',0,500000000]],{note:'Modal awal Owner (simulasi)'});s0.capital=true;bankSave()}
+if(s0.floor4)unlockF4(true);
+setInterval(()=>{const e=$('#economyv');if(e&&!e.hidden)renderEconomy()},2500);
+log('Tahap 6.1 aktif: validasi impor, perlindungan penyimpanan, dan perbaikan tarif deposito 0%.');renderS6();
+})();
+
+</script>
+</body>
+</html>
