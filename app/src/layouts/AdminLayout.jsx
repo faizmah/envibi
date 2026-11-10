@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../app/providers/AuthProvider'
+import { useUI } from '../app/providers/UIProvider'
+import { CommandPalette } from '../components/ui/CommandPalette'
 
 export default function AdminLayout() {
   const { user, profile, isSuperAdmin, signOut } = useAuth()
+  const { theme, toggleTheme, openCommandPalette } = useUI()
   const location = useLocation()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -218,6 +221,45 @@ export default function AdminLayout() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Smart Command Search */}
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            title="Cari & Jalankan Perintah Admin (Cmd+K)"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '6px 10px', borderRadius: '8px',
+              background: 'rgba(139,92,246,0.1)',
+              border: '1px solid rgba(139,92,246,0.25)',
+              color: '#c4b5fd', fontSize: '12px', cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <span>🔍</span>
+            <span className="hide-mobile" style={{ fontSize: '11px', fontWeight: '600' }}>Cari</span>
+            <kbd className="hide-mobile" style={{
+              background: 'rgba(139,92,246,0.2)', padding: '1px 5px',
+              borderRadius: '4px', fontSize: '10px', fontFamily: 'monospace',
+            }}>⌘K</kbd>
+          </button>
+
+          {/* Theme Mode Toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={`Ubah ke Mode ${theme === 'dark' ? 'Terang' : 'Gelap'}`}
+            style={{
+              width: '32px', height: '32px', borderRadius: '8px',
+              border: '1px solid rgba(139,92,246,0.25)',
+              background: 'rgba(139,92,246,0.1)',
+              color: '#c4b5fd',
+              cursor: 'pointer', display: 'grid', placeItems: 'center',
+              fontSize: '13px', transition: 'all 0.15s ease',
+            }}
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+
           <div style={{
             padding: '4px 10px', borderRadius: '20px',
             background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
@@ -283,6 +325,8 @@ export default function AdminLayout() {
           .mobile-close-btn { display: none !important; }
         }
       `}</style>
+      {/* Intelligent Command Palette (Cmd+K) */}
+      <CommandPalette />
     </div>
   )
 }

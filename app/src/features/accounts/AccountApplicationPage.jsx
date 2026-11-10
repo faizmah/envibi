@@ -4,6 +4,7 @@ import { useAuth } from '../../app/providers/AuthProvider'
 import { supabase } from '../../services/supabase/client'
 import { subscribeToApplications } from '../../services/realtime/realtimeService'
 import { formatRupiah, formatDateTime } from '../../utils/format'
+import { Card, Button, Badge, SkeletonTable } from '../../components/ui'
 
 export default function AccountApplicationPage() {
   const { user } = useAuth()
@@ -58,57 +59,77 @@ export default function AccountApplicationPage() {
     if (err) {
       setErrorMsg('Gagal mengirim pengajuan: ' + err.message)
     } else {
-      setSuccessMsg('Pengajuan pembukaan rekening berhasil dikirim! Admin akan segera memeriksa berkas Anda.')
+      setSuccessMsg('Pengajuan pembukaan rekening berhasil dikirim! Admin Bank akan segera memverifikasi berkas Anda.')
       setNotes('')
       loadApplications()
     }
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '20px auto 60px', padding: '0 20px' }}>
-      {/* Form Pengajuan Baru */}
-      <div className="card" style={{ marginBottom: '28px' }}>
-        <div className="card-header">
-          <div>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800' }}>Formulir Pembukaan Rekening</h2>
-            <p style={{ margin: '4px 0 0', color: 'var(--fg-muted)', fontSize: '12px' }}>
-              Ajukan rekening mandiri untuk mendapatkan kotak tabungan fisik ber-NFC
-            </p>
-          </div>
-          <span className="status good">Layanan Resmi</span>
-        </div>
-
+    <div style={{ maxWidth: '840px', margin: '20px auto 80px', padding: '0 clamp(16px, 3vw, 24px)' }}>
+      {/* ─── Form Pengajuan Baru ─── */}
+      <Card
+        variant="elevated"
+        style={{ marginBottom: '28px' }}
+        title="Formulir Pembukaan Rekening"
+        subtitle="Ajukan rekening mandiri untuk mendapatkan fasilitas kotak tabungan fisik ber-NFC"
+        action={<Badge variant="success" dot>Layanan Resmi NVB</Badge>}
+      >
         {errorMsg && (
-          <div style={{ padding: '10px 14px', borderRadius: '10px', background: 'rgba(231, 76, 60, 0.18)', color: '#ff8a80', fontSize: '12px', fontWeight: '700', marginBottom: '14px' }}>
+          <div
+            style={{
+              padding: '12px 16px',
+              borderRadius: '12px',
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: '#ff8a80',
+              fontSize: '13px',
+              fontWeight: '700',
+              marginBottom: '16px',
+            }}
+          >
             ⚠️ {errorMsg}
           </div>
         )}
         {successMsg && (
-          <div style={{ padding: '10px 14px', borderRadius: '10px', background: 'rgba(46, 204, 113, 0.18)', color: '#65d69a', fontSize: '12px', fontWeight: '700', marginBottom: '14px' }}>
+          <div
+            style={{
+              padding: '12px 16px',
+              borderRadius: '12px',
+              background: 'rgba(16, 185, 129, 0.15)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              color: '#65d69a',
+              fontSize: '13px',
+              fontWeight: '700',
+              marginBottom: '16px',
+            }}
+          >
             ✅ {successMsg}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label className="form-label">Jenis Rekening</label>
+            <label className="form-label" htmlFor="accountTypeSelect">Jenis Rekening</label>
             <select
+              id="accountTypeSelect"
               className="form-field"
               value={accountType}
               onChange={(e) => setAccountType(e.target.value)}
             >
-              <option value="TABUNGAN">Tabungan Mandiri (Fasilitas Kotak NFC)</option>
+              <option value="TABUNGAN">Tabungan Mandiri (Fasilitas Kotak Fisik NFC)</option>
               <option value="REGULER">Rekening Reguler</option>
               <option value="BISNIS">Rekening Tabungan Bisnis</option>
             </select>
-            <small style={{ color: 'var(--fg-muted)', fontSize: '11px' }}>
-              Pilih 'Tabungan Mandiri' untuk mendapatkan fasilitas kotak tabungan fisik yang dikirim ke rumah.
+            <small style={{ color: 'var(--text-muted)', fontSize: '11.5px', marginTop: '2px', display: 'block' }}>
+              Pilih <b>Tabungan Mandiri</b> untuk mendapatkan fasilitas kotak tabungan fisik pintar yang dikirimkan ke alamat Anda.
             </small>
           </div>
 
           <div>
-            <label className="form-label">Rencana Setoran Awal (Rp)</label>
+            <label className="form-label" htmlFor="depositInput">Rencana Setoran Awal (Rp)</label>
             <input
+              id="depositInput"
               type="number"
               className="form-field"
               value={initialDeposit}
@@ -117,85 +138,111 @@ export default function AccountApplicationPage() {
               step="10000"
               required
             />
-            <small style={{ color: 'var(--fg-muted)', fontSize: '11px' }}>
-              Setoran awal dapat berupa 0 atau dimasukkan langsung ke kotak saat kotak diterima.
+            <small style={{ color: 'var(--text-muted)', fontSize: '11.5px', marginTop: '2px', display: 'block' }}>
+              Setoran awal dapat dimulai dari Rp 0 atau dimasukkan langsung ke kotak fisik saat kotak telah diterima.
             </small>
           </div>
 
           <div>
-            <label className="form-label">Tujuan Tabungan / Catatan (Opsional)</label>
+            <label className="form-label" htmlFor="notesTextarea">Tujuan Tabungan / Catatan (Opsional)</label>
             <textarea
+              id="notesTextarea"
               className="form-field"
               rows="3"
-              placeholder="Contoh: Tabungan dana darurat keluarga / Tabungan rencana masa depan"
+              placeholder="Contoh: Tabungan dana darurat keluarga / Rencana tabungan masa depan"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-            <Link to="/dashboard" className="btn btn-secondary">
-              Batal
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+            <Link to="/dashboard">
+              <Button variant="secondary">Batal</Button>
             </Link>
-            <button type="submit" disabled={submitting} className="btn btn-primary">
-              {submitting ? 'Mengirim Pengajuan...' : 'Kirim Pengajuan Rekening'}
-            </button>
+            <Button type="submit" variant="primary" loading={submitting} icon="📝">
+              Kirim Pengajuan Rekening
+            </Button>
           </div>
         </form>
-      </div>
+      </Card>
 
-      {/* Riwayat Pengajuan Rekening */}
-      <div className="card">
-        <h3 className="card-title" style={{ marginBottom: '16px' }}>Status Pengajuan Anda</h3>
+      {/* ─── Riwayat Pengajuan Rekening ─── */}
+      <Card
+        variant="surface"
+        title="Status & Riwayat Pengajuan Rekening"
+        subtitle="Pantau proses review dari admin bank hingga penerbitan nomor rekening resmi"
+      >
+        {loading ? (
+          <SkeletonTable rows={3} />
+        ) : applications.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
+            {applications.map((app) => {
+              const statusVariant =
+                app.status === 'APPROVED' ? 'success' :
+                app.status === 'REJECTED' ? 'danger' :
+                app.status === 'REVISION_REQUIRED' ? 'warning' : 'info'
 
-        {applications.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {applications.map((app) => (
-              <div
-                key={app.id}
-                style={{
-                  padding: '14px 16px',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  borderRadius: '12px',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <b>Pengajuan {app.account_type}</b>
-                  <span className={`status ${
-                    app.status === 'APPROVED' ? 'good' :
-                    app.status === 'REJECTED' ? 'bad' :
-                    app.status === 'REVISION_REQUIRED' ? 'bad' : 'wait'
-                  }`}>
-                    {app.status}
-                  </span>
+              return (
+                <div
+                  key={app.id}
+                  style={{
+                    padding: '16px 20px',
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    borderRadius: '14px',
+                    border: '1px solid var(--border)',
+                    transition: 'border-color 0.2s',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ fontWeight: '800', fontSize: '15px', color: 'var(--text-primary)' }}>
+                      Pengajuan Rekening {app.account_type}
+                    </span>
+                    <Badge variant={statusVariant} dot>
+                      {app.status}
+                    </Badge>
+                  </div>
+                  <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span>Waktu Pengajuan: <b style={{ color: 'var(--text-primary)' }}>{formatDateTime(app.created_at)}</b></span>
+                    <span>Rencana Setoran Awal: <b style={{ color: 'var(--accent2)' }}>{formatRupiah(app.initial_deposit)}</b></span>
+                    {app.notes && (
+                      <span style={{ color: 'var(--text-muted)' }}>Catatan Anda: &quot;{app.notes}&quot;</span>
+                    )}
+                    {app.admin_notes && (
+                      <div
+                        style={{
+                          marginTop: '8px',
+                          padding: '10px 14px',
+                          background: 'rgba(239, 68, 68, 0.1)',
+                          border: '1px solid rgba(239, 68, 68, 0.25)',
+                          borderRadius: '10px',
+                          color: '#ff8a80',
+                          fontSize: '12px',
+                        }}
+                      >
+                        <b>Catatan Admin:</b> {app.admin_notes}
+                      </div>
+                    )}
+                    {app.status === 'APPROVED' && (
+                      <div style={{ marginTop: '12px' }}>
+                        <Link to="/dashboard">
+                          <Button variant="primary" size="sm" icon="📊">
+                            Buka Dashboard Rekening Aktif →
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--fg-muted)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span>Waktu Pengajuan: {formatDateTime(app.created_at)}</span>
-                  <span>Rencana Setoran Awal: {formatRupiah(app.initial_deposit)}</span>
-                  {app.admin_notes && (
-                    <div style={{ marginTop: '6px', padding: '8px 12px', background: 'rgba(231, 76, 60, 0.1)', borderRadius: '8px', color: '#ff8a80' }}>
-                      Catatan Admin: {app.admin_notes}
-                    </div>
-                  )}
-                  {app.status === 'APPROVED' && (
-                    <div style={{ marginTop: '8px' }}>
-                      <Link to="/dashboard" className="btn btn-sm btn-primary">
-                        Buka Dashboard Rekening →
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
-          <p style={{ color: 'var(--fg-muted)', fontSize: '13px', textAlign: 'center', margin: '20px 0' }}>
-            Belum ada riwayat pengajuan rekening.
-          </p>
+          <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: '32px', display: 'block', marginBottom: '8px' }}>📝</span>
+            <p style={{ margin: 0, fontSize: '13px' }}>Belum ada riwayat pengajuan rekening.</p>
+          </div>
         )}
-      </div>
+      </Card>
     </div>
   )
 }
-

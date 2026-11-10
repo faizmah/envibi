@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../app/providers/AuthProvider'
+import { useUI } from '../app/providers/UIProvider'
+import { CommandPalette } from '../components/ui/CommandPalette'
 import { supabase } from '../services/supabase/client'
 import { subscribeToNotifications } from '../services/realtime/realtimeService'
 import { formatRupiah } from '../utils/format'
 
 export default function AppLayout() {
   const { user, profile, isAdmin, signOut } = useAuth()
+  const { theme, toggleTheme, openCommandPalette } = useUI()
   const location = useLocation()
   const navigate = useNavigate()
   const [unreadCount, setUnreadCount] = useState(0)
@@ -289,8 +292,48 @@ export default function AppLayout() {
           </nav>
         </div>
 
-        {/* Right: Balance, Notif, User, Signout */}
+        {/* Right: Search, Theme Toggle, Balance, Notif, User, Signout */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {/* Smart Search Shortcut */}
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            title="Cari & Jalankan Perintah (Cmd+K atau Ctrl+K)"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '6px 10px', borderRadius: '8px',
+              background: 'rgba(240,246,252,0.06)',
+              border: '1px solid var(--border, rgba(240,246,252,0.1))',
+              color: 'var(--text-secondary, #8b949e)',
+              fontSize: '12px', cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <span>🔍</span>
+            <span className="hide-mobile" style={{ fontSize: '11px', fontWeight: '600' }}>Cari</span>
+            <kbd className="hide-mobile" style={{
+              background: 'rgba(240,246,252,0.1)', padding: '1px 5px',
+              borderRadius: '4px', fontSize: '10px', fontFamily: 'monospace',
+            }}>⌘K</kbd>
+          </button>
+
+          {/* Theme Mode Toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={`Ubah ke Mode ${theme === 'dark' ? 'Terang' : 'Gelap'}`}
+            style={{
+              width: '34px', height: '34px', borderRadius: '8px',
+              border: '1px solid var(--border, rgba(240,246,252,0.1))',
+              background: 'rgba(240,246,252,0.06)',
+              color: 'var(--text-secondary, #8b949e)',
+              cursor: 'pointer', display: 'grid', placeItems: 'center',
+              fontSize: '14px', transition: 'all 0.15s ease',
+            }}
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+
           {user ? (
             <>
               {/* Balance pill */}
@@ -427,6 +470,8 @@ export default function AppLayout() {
         }
         header a:hover { opacity: 0.85; }
       `}</style>
+      {/* Intelligent Command Palette (Cmd+K) */}
+      <CommandPalette />
     </div>
   )
 }
