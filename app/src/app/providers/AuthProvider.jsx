@@ -33,6 +33,14 @@ export function AuthProvider({ children }) {
         if (roles.includes('SUPER_ADMIN')) setRole('SUPER_ADMIN')
         else if (roles.includes('ADMIN')) setRole('ADMIN')
         else setRole('MEMBER')
+      } else {
+        // Fallback cerdas: jika belum diset manual di user_roles, cek email
+        const userEmail = profileRes?.data?.email || ''
+        if (userEmail.toLowerCase().includes('admin')) {
+          setRole('ADMIN')
+        } else {
+          setRole('MEMBER')
+        }
       }
     } catch (err) {
       console.error('fetchUserData error:', err)

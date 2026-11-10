@@ -1,7 +1,6 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "app/dist",
-  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/(.*)",
@@ -9,4 +8,3 @@
     }
   ]
 }
-
