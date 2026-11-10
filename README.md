@@ -125,7 +125,8 @@ Setelah mendaftarkan akun baru melalui halaman Register:
 
 1. Push repository ke GitHub / GitLab.
 2. Import repository di dashboard **Vercel**.
-3. Set **Root Directory** ke `app`.
+3. Pastikan **Root Directory** adalah root repository (`./` atau biarkan kosong / default).
+4. Pastikan **Output Directory** adalah `dist` (default Vite).
 4. Tambahkan Environment Variables pada menu Project Settings Vercel:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
