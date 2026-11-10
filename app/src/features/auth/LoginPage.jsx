@@ -39,15 +39,41 @@ export default function LoginPage() {
 
       {!isSupabaseConfigured && (
         <div style={{
-          padding: '10px 12px',
-          borderRadius: '10px',
-          background: 'rgba(52, 152, 219, 0.15)',
-          border: '1px solid rgba(52, 152, 219, 0.3)',
+          padding: '12px 14px',
+          borderRadius: '12px',
+          background: 'rgba(52, 152, 219, 0.12)',
+          border: '1px solid rgba(52, 152, 219, 0.25)',
           color: '#74c0e8',
-          fontSize: '11.5px',
+          fontSize: '12px',
           lineHeight: '1.5',
         }}>
-          💡 <b>Mode Demo Mandiri:</b> Masuk dengan email & password apa saja. Gunakan email dengan kata <code>admin</code> untuk hak akses Administrator.
+          <div style={{ marginBottom: '8px' }}>
+            💡 <b>Mode Simulasi Instan:</b> Pilih akun uji coba di bawah ini untuk masuk langsung:
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              style={{ fontSize: '11px', padding: '4px 10px' }}
+              onClick={() => {
+                setEmail('admin@nvb.com')
+                setPassword('admin123')
+              }}
+            >
+              🛡️ Admin: admin@nvb.com
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              style={{ fontSize: '11px', padding: '4px 10px' }}
+              onClick={() => {
+                setEmail('member@nvb.com')
+                setPassword('member123')
+              }}
+            >
+              👤 Member: member@nvb.com
+            </button>
+          </div>
         </div>
       )}
 

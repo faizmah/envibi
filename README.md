@@ -44,3 +44,4 @@ Narayan Virtual Bank adalah sistem pengelolaan tabungan mandiri realtime berbasi
 - `app/supabase/migrations/` — SQL Migration skema tabel, RLS policies, dan stored procedures (RPC).
 - `Narayan_Virtual_Bank_Tahap_7_1_Portal_Fix.html` — Sumber kode awal prototype sebelum migrasi.
 - `konsep1.txt` — Master prompt arsitektur dan spesifikasi teknis lengkap.
+
