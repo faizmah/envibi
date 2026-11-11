@@ -123,42 +123,94 @@ body.light-mode {
   --bg-base:        #f8fafc;
   --bg-surface:     #ffffff;
   --bg-elevated:    #ffffff;
-  --bg-overlay:     rgba(248, 250, 252, 0.94);
+  --bg-overlay:     rgba(248, 250, 252, 0.96);
   --text-primary:   #0f172a;
-  --text-secondary: #475569;
-  --text-muted:     #64748b;
+  --text-secondary: #334155;
+  --text-muted:     #475569;
   --border:         rgba(15, 23, 42, 0.12);
   --border-muted:   rgba(15, 23, 42, 0.08);
   --fg:             #0f172a;
-  --fg-muted:       #475569;
+  --fg-muted:       #334155;
   --bg:             #f8fafc;
   --bg2:            #f1f5f9;
-  --glass:          rgba(255, 255, 255, 0.88);
-  --glass2:         rgba(255, 255, 255, 0.96);
+  --glass:          rgba(255, 255, 255, 0.94);
+  --glass2:         rgba(255, 255, 255, 0.98);
   --section-bg:     rgba(15, 23, 42, 0.04);
+  --accent:         #996515;
+  --accent2:        #85540a;
+  --accent-fg:      #ffffff;
+  --accent-purple:  #6d28d9;
+  --accent-green:   #047857;
+  --accent-red:     #b91c1c;
+  --success:        #047857;
+  --success-bg:     rgba(4, 120, 87, 0.12);
+  --warning:        #b45309;
+  --warning-bg:     rgba(180, 83, 9, 0.12);
+  --danger:         #b91c1c;
+  --danger-bg:      rgba(185, 28, 28, 0.12);
+  --info:           #1d4ed8;
+  --info-bg:        rgba(29, 78, 216, 0.12);
   background-color: #f8fafc !important;
   color: #0f172a !important;
 }
 
-body.light-mode header {
-  background: rgba(255, 255, 255, 0.94) !important;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.1) !important;
+body.light-mode h1,
+body.light-mode h2,
+body.light-mode h3,
+body.light-mode h4,
+body.light-mode h5,
+body.light-mode h6,
+body.light-mode .card-title {
+  color: #0f172a !important;
 }
 
+body.light-mode p,
+body.light-mode label,
+body.light-mode .form-label {
+  color: #1e293b !important;
+}
+
+body.light-mode small,
+body.light-mode .text-muted,
+body.light-mode .kpi-label {
+  color: #475569 !important;
+}
+
+body.light-mode .kpi-value {
+  color: #0f172a !important;
+}
+
+body.light-mode header {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1) !important;
+  box-shadow: 0 1px 12px rgba(15, 23, 42, 0.05) !important;
+}
 body.light-mode .desktop-sidebar,
 body.light-mode .mobile-sidebar {
   background: #ffffff !important;
   border-right: 1px solid rgba(15, 23, 42, 0.1) !important;
 }
 
-body.light-mode .main-content {
+body.light-mode .desktop-sidebar *:not([style*="background: linear-gradient"]):not([style*="background:linear-gradient"]),
+body.light-mode .mobile-sidebar *:not([style*="background: linear-gradient"]):not([style*="background:linear-gradient"]) {
+  color: var(--text-primary, #0f172a);
+}
+
+body.light-mode .main-content,
+body.light-mode main {
   background: #f8fafc !important;
+  color: #0f172a !important;
 }
 
 body.light-mode .card,
-body.light-mode .ui-card {
+body.light-mode .card-glass,
+body.light-mode .card-elevated,
+body.light-mode .card-gradient,
+body.light-mode .ui-card,
+body.light-mode .kpi-card,
+body.light-mode .kpi-item {
   background: #ffffff !important;
-  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  border: 1px solid rgba(15, 23, 42, 0.12) !important;
   color: #0f172a !important;
   box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05) !important;
 }
@@ -168,13 +220,14 @@ body.light-mode select,
 body.light-mode textarea {
   background: #ffffff !important;
   color: #0f172a !important;
-  border: 1px solid rgba(15, 23, 42, 0.2) !important;
+  border: 1px solid rgba(15, 23, 42, 0.22) !important;
 }
 
 body.light-mode input:focus,
 body.light-mode select:focus,
 body.light-mode textarea:focus {
-  border-color: #d4a853 !important;
+  border-color: #996515 !important;
+  box-shadow: 0 0 0 3px rgba(153, 101, 21, 0.15) !important;
 }
 
 body.light-mode .table-desktop-view table {
@@ -182,7 +235,8 @@ body.light-mode .table-desktop-view table {
 }
 
 body.light-mode .table-desktop-view th {
-  color: #64748b !important;
+  color: #475569 !important;
+  background: rgba(15, 23, 42, 0.03) !important;
 }
 
 body.light-mode .table-desktop-view tr {
@@ -190,7 +244,273 @@ body.light-mode .table-desktop-view tr {
 }
 
 body.light-mode .table-desktop-view tr:hover {
-  background: rgba(15, 23, 42, 0.02) !important;
+  background: rgba(15, 23, 42, 0.03) !important;
+}
+
+body.light-mode .table-mobile-view > div {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+  color: #0f172a !important;
+}
+
+/* Force readable text colors for elements with hardcoded light colors */
+body.light-mode [style*="color: #f0f6fc"],
+body.light-mode [style*="color: rgb(240, 246, 252)"],
+body.light-mode [style*="color:#f0f6fc"],
+body.light-mode [style*="color: #fff"],
+body.light-mode [style*="color:#fff"],
+body.light-mode [style*="color: #ffffff"],
+body.light-mode [style*="color:#ffffff"],
+body.light-mode [style*="color: #edf2f7"],
+body.light-mode [style*="color:#edf2f7"],
+body.light-mode [style*="color: #f8fafc"],
+body.light-mode [style*="color:#f8fafc"],
+body.light-mode [style*="color: #f1f5f9"],
+body.light-mode [style*="color:#f1f5f9"] {
+  color: #0f172a !important;
+}
+
+/* Additional hardcoded dark text overrides */
+body.light-mode [style*="color: #0d1117"],
+body.light-mode [style*="color:#0d1117"] {
+  color: #0f172a !important;
+}
+
+body.light-mode [style*="color: #c4b5fd"],
+body.light-mode [style*="color:#c4b5fd"],
+body.light-mode [style*="color: #a78bfa"],
+body.light-mode [style*="color:#a78bfa"] {
+  color: #5b21b6 !important;
+}
+
+body.light-mode [style*="color: #8b949e"],
+body.light-mode [style*="color:#8b949e"],
+body.light-mode [style*="color: #656d76"],
+body.light-mode [style*="color:#656d76"],
+body.light-mode [style*="color: #9eacbb"],
+body.light-mode [style*="color:#9eacbb"] {
+  color: #334155 !important;
+}
+
+body.light-mode [style*="color: #d1fae5"],
+body.light-mode [style*="color:#d1fae5"] {
+  color: #065f46 !important;
+}
+
+body.light-mode [style*="color: #65d69a"],
+body.light-mode [style*="color:#65d69a"],
+body.light-mode [style*="color: #34d399"],
+body.light-mode [style*="color:#34d399"] {
+  color: #047857 !important;
+}
+
+body.light-mode [style*="color: #ff8a80"],
+body.light-mode [style*="color:#ff8a80"],
+body.light-mode [style*="color: #f87171"],
+body.light-mode [style*="color:#f87171"] {
+  color: #b91c1c !important;
+}
+
+body.light-mode [style*="color: #d4a853"],
+body.light-mode [style*="color:#d4a853"],
+body.light-mode [style*="color: #e1bd7b"],
+body.light-mode [style*="color:#e1bd7b"],
+body.light-mode [style*="color: #e8c06a"],
+body.light-mode [style*="color:#e8c06a"] {
+  color: #85540a !important;
+}
+
+body.light-mode [style*="color: #93c5fd"],
+body.light-mode [style*="color:#93c5fd"] {
+  color: #1e40af !important;
+}
+
+/* Light mode backgrounds that were hardcoded dark */
+body.light-mode [style*="background: #161b22"],
+body.light-mode [style*="background:#161b22"],
+body.light-mode [style*="background: #1c2128"],
+body.light-mode [style*="background:#1c2128"],
+body.light-mode [style*="background: rgba(13,17,23"],
+body.light-mode [style*="background:rgba(13,17,23"] {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+body.light-mode [style*="background: #0d1117"],
+body.light-mode [style*="background:#0d1117"] {
+  background: #f8fafc !important;
+}
+
+body.light-mode [style*="background: rgba(255, 255, 255, 0.02)"],
+body.light-mode [style*="background: rgba(255, 255, 255, 0.03)"],
+body.light-mode [style*="background: rgba(255, 255, 255, 0.05)"] {
+  background: rgba(15, 23, 42, 0.03) !important;
+}
+
+/* Sidebar and navbar in light mode: dark background → light */
+body.light-mode [style*="background: var(--bg-surface"],
+body.light-mode [style*="background:var(--bg-surface"] {
+  background: #ffffff !important;
+}
+
+/* Hardcoded dark opacity backgrounds in cards / popups */
+body.light-mode [style*="background: rgba(0,0,0,0.75)"],
+body.light-mode [style*="background:rgba(0,0,0,0.75)"] {
+  background: rgba(15, 23, 42, 0.5) !important;
+}
+
+/* Profile dropdown and modal panels */
+body.light-mode [style*="background: var(--bg-elevated"],
+body.light-mode [style*="background:var(--bg-elevated"] {
+  background: #ffffff !important;
+}
+
+/* Auth-page background */
+body.light-mode .auth-bg {
+  background: radial-gradient(circle at 50% 20%, #dbeafe 0%, #f1f5f9 100%) !important;
+}
+
+body.light-mode .auth-card {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+body.light-mode .auth-title {
+  color: #0f172a !important;
+}
+
+/* NFC status indicators in light mode */
+body.light-mode .nfc-status-indicator.supported {
+  background: rgba(4, 120, 87, 0.1) !important;
+  color: #047857 !important;
+  border-color: rgba(4, 120, 87, 0.3) !important;
+}
+
+body.light-mode .nfc-status-indicator.unsupported {
+  background: rgba(180, 83, 9, 0.1) !important;
+  color: #92400e !important;
+  border-color: rgba(180, 83, 9, 0.3) !important;
+}
+
+body.light-mode .nfc-status-indicator.waiting {
+  background: rgba(29, 78, 216, 0.08) !important;
+  color: #1e40af !important;
+  border-color: rgba(29, 78, 216, 0.3) !important;
+}
+
+/* Status badges (legacy .status classes) in light mode */
+body.light-mode .status.good { background: rgba(4,120,87,0.12) !important; color: #047857 !important; }
+body.light-mode .status.wait { background: rgba(180,83,9,0.12) !important; color: #92400e !important; }
+body.light-mode .status.bad  { background: rgba(185,28,28,0.12) !important; color: #b91c1c !important; }
+body.light-mode .status.info { background: rgba(29,78,216,0.12) !important; color: #1d4ed8 !important; }
+
+/* Hardcoded monospace / code colors */
+body.light-mode [style*="color: #74c0e8"],
+body.light-mode [style*="color:#74c0e8"] {
+  color: #1e40af !important;
+}
+
+body.light-mode [style*="color: #e8c75b"],
+body.light-mode [style*="color:#e8c75b"],
+body.light-mode [style*="color: #e8c06a"],
+body.light-mode [style*="color:#e8c06a"] {
+  color: #92400e !important;
+}
+
+/* Sidebar footer shortcut button */
+body.light-mode [style*="color: #656d76"],
+body.light-mode [style*="color:#656d76"] {
+  color: #475569 !important;
+}
+
+body.light-mode [style*="background: rgba(240,246,252,0.04)"],
+body.light-mode [style*="background: rgba(240,246,252,0.06)"],
+body.light-mode [style*="background: rgba(240,246,252,0.08)"],
+body.light-mode [style*="background: rgba(240,246,252,0.10)"],
+body.light-mode [style*="background: rgba(240,246,252,0.12)"] {
+  background: rgba(15, 23, 42, 0.05) !important;
+}
+
+body.light-mode [style*="border: 1px solid rgba(240,246,252"],
+body.light-mode [style*="border:1px solid rgba(240,246,252"],
+body.light-mode [style*="border-bottom: 1px solid rgba(240,246,252"],
+body.light-mode [style*="borderBottom: 1px solid rgba(240,246,252"] {
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Topbar in light mode */
+body.light-mode header {
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-bottom-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Dropdown backdrop */
+body.light-mode [style*="background: var(--glass2"],
+body.light-mode [style*="background:var(--glass2"] {
+  background: rgba(255,255,255,0.98) !important;
+}
+
+/* Toast */
+body.light-mode .toast {
+  background: rgba(255, 255, 255, 0.98) !important;
+  color: #0f172a !important;
+  border-color: rgba(15,23,42,0.1) !important;
+}
+
+/* Linear gradient backgrounds for active sidebar / admin items — keep readable */
+body.light-mode [style*="linear-gradient(135deg, #7c3aed"],
+body.light-mode [style*="linear-gradient(135deg,#7c3aed"] {
+  /* Purple admin active items — keep purple, fine in light mode */
+}
+
+/* Loading overlay */
+body.light-mode .loading-overlay {
+  background: rgba(241, 245, 249, 0.75) !important;
+}
+
+/* kbd elements */
+body.light-mode kbd {
+  background: rgba(15, 23, 42, 0.08) !important;
+  color: #334155 !important;
+  border: 1px solid rgba(15, 23, 42, 0.15) !important;
+}
+
+/* Table responsive rows in mobile view */
+body.light-mode .table-mobile-view .mobile-row-label {
+  color: #64748b !important;
+}
+
+/* Hardcoded monospace tokens in NFC / SQL pages */
+body.light-mode code,
+body.light-mode pre {
+  background: rgba(15, 23, 42, 0.05) !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+}
+body.light-mode .badge,
+body.light-mode .badge-neutral {
+  background: rgba(15, 23, 42, 0.08) !important;
+  color: #1e293b !important;
+}
+
+body.light-mode .badge-success {
+  background: rgba(4, 120, 87, 0.12) !important;
+  color: #047857 !important;
+}
+
+body.light-mode .badge-warning {
+  background: rgba(180, 83, 9, 0.12) !important;
+  color: #9a3412 !important;
+}
+
+body.light-mode .badge-danger {
+  background: rgba(185, 28, 28, 0.12) !important;
+  color: #b91c1c !important;
+}
+
+body.light-mode .badge-info {
+  background: rgba(29, 78, 216, 0.12) !important;
+  color: #1d4ed8 !important;
 }
 
 /* ============================================================

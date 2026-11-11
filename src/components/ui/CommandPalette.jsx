@@ -13,18 +13,22 @@ export function CommandPalette() {
   const inputRef = useRef(null)
 
   const items = [
-    // Member routes
+    // 3D Virtual Office
     { id: 'home', label: 'Kantor 3D Virtual Office', category: 'Navigasi', icon: '🏛️', path: '/' },
-    { id: 'dashboard', label: 'Dashboard Rekening & Saldo', category: 'Member', icon: '📊', path: '/dashboard' },
-    { id: 'deposit', label: 'Setor Mandiri (NFC Cash In)', category: 'Aksi', icon: '📥', path: '/deposit' },
-    { id: 'withdrawal', label: 'Tarik Tabungan Mandiri', category: 'Aksi', icon: '📤', path: '/withdrawal' },
-    { id: 'apply', label: 'Pengajuan Pembukaan Rekening Baru', category: 'Member', icon: '📝', path: '/accounts/apply' },
-    { id: 'transactions', label: 'Riwayat Transaksi & Mutasi', category: 'Member', icon: '📋', path: '/transactions' },
-    { id: 'box', label: 'Aktivasi Kotak Tabungan NFC Fisik', category: 'Aksi', icon: '📦', path: '/box/activate' },
-    { id: 'goals', label: 'Target Tabungan (Savings Goals)', category: 'Member', icon: '🎯', path: '/goals' },
-    { id: 'reports', label: 'Cetak Laporan & Rekening Koran', category: 'Member', icon: '📄', path: '/reports' },
-    { id: 'nfc-scan', label: 'Pindai / Scan Kartu NFC', category: 'Aksi', icon: '📡', path: '/nfc/scan' },
-    { id: 'profile', label: 'Profil Member & Data Diri', category: 'Member', icon: '👤', path: '/profile' },
+
+    // Member routes (Hanya untuk member; dibuang jika login sebagai Admin)
+    ...(!isAdmin ? [
+      { id: 'dashboard', label: 'Dashboard Rekening & Saldo', category: 'Member', icon: '📊', path: '/dashboard' },
+      { id: 'deposit', label: 'Setor Mandiri (NFC Cash In)', category: 'Aksi', icon: '📥', path: '/deposit' },
+      { id: 'withdrawal', label: 'Tarik Tabungan Mandiri', category: 'Aksi', icon: '📤', path: '/withdrawal' },
+      { id: 'apply', label: 'Pengajuan Pembukaan Rekening Baru', category: 'Member', icon: '📝', path: '/accounts/apply' },
+      { id: 'transactions', label: 'Riwayat Transaksi & Mutasi', category: 'Member', icon: '📋', path: '/transactions' },
+      { id: 'box', label: 'Aktivasi Kotak Tabungan NFC Fisik', category: 'Aksi', icon: '📦', path: '/box/activate' },
+      { id: 'goals', label: 'Target Tabungan (Savings Goals)', category: 'Member', icon: '🎯', path: '/goals' },
+      { id: 'reports', label: 'Cetak Laporan & Rekening Koran', category: 'Member', icon: '📄', path: '/reports' },
+      { id: 'nfc-scan', label: 'Pindai / Scan Kartu NFC', category: 'Aksi', icon: '📡', path: '/nfc/scan' },
+      { id: 'profile', label: 'Profil Member & Data Diri', category: 'Member', icon: '👤', path: '/profile' },
+    ] : []),
 
     // Admin routes (only visible if admin or in search)
     ...(isAdmin ? [

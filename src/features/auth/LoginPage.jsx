@@ -8,7 +8,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
-  const { signIn, isSupabaseConfigured } = useAuth()
+  const { signIn, isSupabaseConfigured, sessionNotice, clearSessionNotice } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
@@ -20,6 +20,7 @@ export default function LoginPage() {
 
     setLoading(true)
     setErrorMsg('')
+    clearSessionNotice?.()
 
     const res = await signIn({ email, password })
     setLoading(false)
@@ -27,7 +28,11 @@ export default function LoginPage() {
     if (!res.ok) {
       setErrorMsg(res.error || 'Login gagal. Periksa kembali email dan password Anda.')
     } else {
-      navigate('/dashboard')
+      if (res.role === 'ADMIN' || res.role === 'SUPER_ADMIN') {
+        navigate('/admin')
+      } else {
+        navigate('/dashboard')
+      }
     }
   }
 
@@ -41,6 +46,41 @@ export default function LoginPage() {
           Akses rekening tabungan mandiri dan kotak pintar NFC Anda
         </p>
       </div>
+
+      {sessionNotice && (
+        <div
+          style={{
+            padding: '12px 14px',
+            borderRadius: '12px',
+            background: 'rgba(245, 158, 11, 0.15)',
+            border: '1px solid rgba(245, 158, 11, 0.35)',
+            color: 'var(--warning, #f59e0b)',
+            fontSize: '12.5px',
+            fontWeight: '600',
+            lineHeight: '1.5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+          }}
+        >
+          <span>⏳ {sessionNotice}</span>
+          <button
+            type="button"
+            onClick={clearSessionNotice}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'inherit',
+              cursor: 'pointer',
+              fontWeight: '800',
+              padding: '2px 6px',
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {!isSupabaseConfigured && (
         <div

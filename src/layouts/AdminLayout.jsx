@@ -15,17 +15,107 @@ const ADMIN_NAV = [
   { path: '/admin/audit',        label: 'Audit Trail',       icon: '🛡️', desc: 'Log permanen' },
 ]
 
+// ─── ADMIN LOGOUT CONFIRMATION MODAL ──────────────────────────────────────────
+function AdminLogoutModal({ onConfirm, onCancel, loading }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(0,0,0,0.75)',
+      backdropFilter: 'blur(8px)',
+      WebkitBackdropFilter: 'blur(8px)',
+      animation: 'fadeIn 0.2s ease',
+      padding: '16px',
+    }}>
+      <div style={{
+        background: 'var(--bg-surface, #161b22)',
+        border: '1px solid rgba(139,92,246,0.3)',
+        borderRadius: '16px',
+        padding: '24px',
+        maxWidth: '420px',
+        width: '100%',
+        boxShadow: '0 20px 48px rgba(0,0,0,0.6), 0 0 24px rgba(139,92,246,0.2)',
+        textAlign: 'center',
+        animation: 'slideUp 0.25s ease',
+      }}>
+        <div style={{
+          width: '52px', height: '52px', borderRadius: '14px',
+          background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+          display: 'grid', placeItems: 'center', margin: '0 auto 16px',
+          fontSize: '24px',
+        }}>
+          🚪
+        </div>
+
+        <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: '800', color: 'var(--text-primary, #f0f6fc)' }}>
+          Konfirmasi Keluar Sesi Admin
+        </h3>
+        <p style={{ margin: '0 0 24px', fontSize: '13px', color: 'var(--text-secondary, #8b949e)', lineHeight: '1.5' }}>
+          Apakah Anda yakin ingin mengakhiri sesi Administrator ini? Anda harus login kembali untuk mengakses panel operasional bank.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            style={{
+              padding: '10px 16px', borderRadius: '10px',
+              border: '1px solid var(--border, rgba(240,246,252,0.12))',
+              background: 'transparent',
+              color: 'var(--text-primary, #f0f6fc)',
+              fontSize: '13px', fontWeight: '700',
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            style={{
+              padding: '10px 16px', borderRadius: '10px',
+              border: '1px solid #ef4444',
+              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              color: '#ffffff',
+              fontSize: '13px', fontWeight: '800',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              boxShadow: '0 4px 14px rgba(239,68,68,0.35)',
+            }}
+          >
+            {loading ? 'Mengeluarkan...' : '🚪 Ya, Keluar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminLayout() {
   const { user, profile, isSuperAdmin, signOut } = useAuth()
   const { theme, toggleTheme, openCommandPalette } = useUI()
   const location = useLocation()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   useEffect(() => { setSidebarOpen(false) }, [location.pathname])
 
   const userInitial = profile?.full_name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'A'
   const userName    = profile?.full_name || user?.email?.split('@')[0] || 'Admin'
+
+  const handleLogoutConfirm = async () => {
+    setLoggingOut(true)
+    try {
+      await signOut()
+      navigate('/login')
+    } finally {
+      setLoggingOut(false)
+      setShowLogoutModal(false)
+    }
+  }
 
   // ─── Sidebar Content (shared between desktop & mobile) ──────────────────────
   const SidebarContent = () => (
@@ -152,14 +242,13 @@ export default function AdminLayout() {
       {/* ── Divider ── */}
       <div style={{ height: '1px', background: 'rgba(139,92,246,0.12)', margin: '4px 16px' }} />
 
-      {/* ── Kembali ke Portal Nasabah ── */}
+      {/* ── Navigasi Eksternal ── */}
       <div style={{ padding: '10px 8px 4px' }}>
-        <div style={{ fontSize: '9px', fontWeight: '800', color: '#656d76', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 8px 6px' }}>
-          Navigasi Lain
+        <div style={{ fontSize: '9px', fontWeight: '800', color: 'var(--text-muted, #656d76)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 8px 6px' }}>
+          Navigasi Sistem
         </div>
         {[
-          { to: '/',          label: 'Kantor 3D',      icon: '🏛️' },
-          { to: '/dashboard', label: 'Portal Nasabah', icon: '👤', accent: true },
+          { to: '/', label: 'Kantor 3D Virtual', icon: '🏛️' },
         ].map(link => (
           <Link
             key={link.to}
@@ -167,19 +256,18 @@ export default function AdminLayout() {
             style={{
               display: 'flex', alignItems: 'center', gap: '8px',
               padding: '8px 12px', borderRadius: '8px', textDecoration: 'none',
-              color: link.accent ? '#d4a853' : '#8b949e',
-              fontSize: '12px', fontWeight: link.accent ? '700' : '500',
+              color: 'var(--text-secondary, #8b949e)',
+              fontSize: '12px', fontWeight: '600',
               marginBottom: '2px',
-              background: link.accent ? 'rgba(212,168,83,0.08)' : 'transparent',
-              border: link.accent ? '1px dashed rgba(212,168,83,0.3)' : '1px solid transparent',
+              background: 'transparent',
+              border: '1px solid transparent',
               transition: 'all 0.15s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = link.accent ? 'rgba(212,168,83,0.15)' : 'rgba(240,246,252,0.05)'; e.currentTarget.style.color = link.accent ? '#e8b96a' : '#f0f6fc' }}
-            onMouseLeave={e => { e.currentTarget.style.background = link.accent ? 'rgba(212,168,83,0.08)' : 'transparent'; e.currentTarget.style.color = link.accent ? '#d4a853' : '#8b949e' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; e.currentTarget.style.color = 'var(--text-primary, #f0f6fc)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary, #8b949e)' }}
           >
             <span>{link.icon}</span>
             <span>{link.label}</span>
-            {link.accent && <span style={{ marginLeft: 'auto', fontSize: '10px', opacity: 0.6 }}>↗</span>}
           </Link>
         ))}
       </div>
@@ -191,30 +279,41 @@ export default function AdminLayout() {
         marginTop: '6px',
       }}>
         <button
-          onClick={() => signOut().then(() => navigate('/'))}
+          type="button"
+          onClick={() => setShowLogoutModal(true)}
           style={{
-            width: '100%', padding: '8px', borderRadius: '8px',
+            width: '100%', padding: '9px', borderRadius: '8px',
             border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)',
-            color: '#f87171', fontWeight: '700', fontSize: '12px', cursor: 'pointer',
+            color: '#ef4444', fontWeight: '700', fontSize: '12px', cursor: 'pointer',
             transition: 'all 0.15s', marginBottom: '8px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.18)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}
-        >🚪 Keluar dari Sesi</button>
+        >🚪 Keluar dari Sesi Admin</button>
 
         <div style={{
           padding: '7px 10px', borderRadius: '8px',
           background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.18)',
-          fontSize: '9.5px', color: '#7c3aed', lineHeight: '1.5', textAlign: 'center',
+          fontSize: '9.5px', color: 'var(--accent-purple, #7c3aed)', lineHeight: '1.5', textAlign: 'center',
         }}>
-          🔒 Sesi Aman Admin • Semua mutasi tercatat
+          🔒 Sesi Aman Admin • Auto-logout 1 Jam
         </div>
       </div>
     </div>
   )
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#0d1117', color: '#f0f6fc' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg, #0d1117)', color: 'var(--text-primary, #f0f6fc)' }}>
+
+      {/* Modal Konfirmasi Logout Admin */}
+      {showLogoutModal && (
+        <AdminLogoutModal
+          onConfirm={handleLogoutConfirm}
+          onCancel={() => setShowLogoutModal(false)}
+          loading={loggingOut}
+        />
+      )}
 
       {/* ─── Mobile Backdrop ─────────────────────────────────────────── */}
       {sidebarOpen && (
@@ -230,11 +329,11 @@ export default function AdminLayout() {
       {/* ─── Admin Topbar ────────────────────────────────────────────── */}
       <header style={{
         height: '56px', flexShrink: 0,
-        background: '#161b22',
+        background: 'var(--bg-surface, #161b22)',
         borderBottom: '2px solid rgba(139,92,246,0.3)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 20px', position: 'sticky', top: 0, zIndex: 100,
-        boxShadow: '0 2px 20px rgba(139,92,246,0.15)',
+        boxShadow: '0 2px 20px rgba(139,92,246,0.12)',
       }}>
         {/* Left: Hamburger + Branding */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -257,7 +356,7 @@ export default function AdminLayout() {
               boxShadow: '0 2px 8px rgba(139,92,246,0.4)',
             }}>⚙</div>
             <div>
-              <div style={{ fontSize: '12px', fontWeight: '900', letterSpacing: '0.06em', color: '#f0f6fc' }}>
+              <div style={{ fontSize: '12px', fontWeight: '900', letterSpacing: '0.06em', color: 'var(--text-primary, #f0f6fc)' }}>
                 NARAYAN <span style={{ color: '#8b5cf6' }}>ADMIN</span>
               </div>
               <div style={{ fontSize: '9px', color: '#8b5cf6', fontWeight: '700' }}>
@@ -272,8 +371,8 @@ export default function AdminLayout() {
           {/* Admin mode badge */}
           <div style={{
             padding: '3px 10px', borderRadius: '20px',
-            background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)',
-            fontSize: '10px', fontWeight: '800', color: '#c4b5fd', letterSpacing: '0.06em',
+            background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)',
+            fontSize: '10px', fontWeight: '800', color: 'var(--accent-purple, #8b5cf6)', letterSpacing: '0.06em',
             display: 'flex', alignItems: 'center', gap: '5px',
           }} className="hide-mobile">
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block', animation: 'pulse 2s infinite' }} />
@@ -292,7 +391,7 @@ export default function AdminLayout() {
               padding: '5px 10px', borderRadius: '8px',
               background: 'rgba(139,92,246,0.1)',
               border: '1px solid rgba(139,92,246,0.3)',
-              color: '#c4b5fd', fontSize: '11.5px', cursor: 'pointer',
+              color: 'var(--text-primary, #f0f6fc)', fontSize: '11.5px', cursor: 'pointer',
               transition: 'all 0.15s ease',
             }}
           >
@@ -300,7 +399,7 @@ export default function AdminLayout() {
             <span className="hide-mobile" style={{ fontSize: '11px', fontWeight: '600' }}>Cari</span>
             <kbd className="hide-mobile" style={{
               background: 'rgba(139,92,246,0.25)', padding: '1px 5px',
-              borderRadius: '4px', fontSize: '9px', fontFamily: 'monospace', color: '#c4b5fd',
+              borderRadius: '4px', fontSize: '9px', fontFamily: 'monospace', color: 'var(--text-primary, #f0f6fc)',
             }}>⌘K</kbd>
           </button>
 
@@ -311,7 +410,7 @@ export default function AdminLayout() {
             style={{
               width: '32px', height: '32px', borderRadius: '8px',
               border: '1px solid rgba(139,92,246,0.3)',
-              background: 'rgba(139,92,246,0.1)', color: '#c4b5fd',
+              background: 'rgba(139,92,246,0.1)', color: 'var(--text-primary, #f0f6fc)',
               cursor: 'pointer', display: 'grid', placeItems: 'center',
               fontSize: '13px', transition: 'all 0.15s ease',
             }}
@@ -319,24 +418,22 @@ export default function AdminLayout() {
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
 
-          {/* Back to Member Portal button */}
-          <Link
-            to="/dashboard"
-            title="Buka Portal Nasabah"
+          {/* Quick Logout Button */}
+          <button
+            type="button"
+            onClick={() => setShowLogoutModal(true)}
+            title="Keluar dari Sesi Admin"
             style={{
               display: 'flex', alignItems: 'center', gap: '5px',
-              padding: '5px 10px', borderRadius: '8px', textDecoration: 'none',
-              fontSize: '11px', fontWeight: '700', whiteSpace: 'nowrap',
-              background: 'rgba(212,168,83,0.1)', color: '#d4a853',
-              border: '1px solid rgba(212,168,83,0.3)',
-              transition: 'all 0.15s ease',
+              padding: '6px 12px', borderRadius: '8px',
+              border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.1)',
+              color: '#ef4444', fontSize: '11.5px', fontWeight: '700',
+              cursor: 'pointer', transition: 'all 0.15s ease',
             }}
-            className="hide-mobile"
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,168,83,0.18)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(212,168,83,0.1)' }}
           >
-            <span>👤</span><span>Portal Nasabah</span>
-          </Link>
+            <span>🚪</span>
+            <span className="hide-mobile">Keluar</span>
+          </button>
 
           {/* User name + role */}
           <div style={{
@@ -352,7 +449,7 @@ export default function AdminLayout() {
               fontWeight: '800', fontSize: '10px', color: '#c4b5fd',
             }}>{userInitial}</div>
             <div style={{ lineHeight: 1 }}>
-              <div style={{ fontSize: '11px', fontWeight: '700', color: '#c4b5fd' }}>{userName}</div>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-primary, #f0f6fc)' }}>{userName}</div>
               <div style={{ fontSize: '8px', color: '#7c3aed', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {isSuperAdmin ? 'Super Admin' : 'Petugas'}
               </div>
@@ -367,7 +464,7 @@ export default function AdminLayout() {
         {/* Desktop Sidebar */}
         <aside style={{
           width: '245px', flexShrink: 0,
-          background: '#161b22',
+          background: 'var(--bg-surface, #161b22)',
           borderRight: '1px solid rgba(139,92,246,0.15)',
           position: 'sticky', top: '56px',
           height: 'calc(100vh - 56px)',
@@ -381,7 +478,7 @@ export default function AdminLayout() {
         <aside style={{
           position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 150,
           width: '265px',
-          background: '#161b22',
+          background: 'var(--bg-surface, #161b22)',
           borderRight: '1px solid rgba(139,92,246,0.25)',
           boxShadow: '4px 0 32px rgba(0,0,0,0.7)',
           overflowY: 'auto',
@@ -398,7 +495,7 @@ export default function AdminLayout() {
           overflowY: 'visible',
           padding: 'clamp(16px, 2.5vw, 30px)',
           paddingBottom: '80px',
-          background: '#0d1117',
+          background: 'var(--bg, #0d1117)',
         }}>
           <Outlet />
         </main>

@@ -55,13 +55,14 @@ function LogoutModal({ onConfirm, onCancel, loading }) {
       backdropFilter: 'blur(8px)',
       WebkitBackdropFilter: 'blur(8px)',
       animation: 'fadeIn 0.2s ease',
+      padding: '16px',
     }}>
       <div style={{
-        background: '#1c2128',
+        background: 'var(--bg-elevated, #1c2128)',
         border: '1px solid rgba(239,68,68,0.3)',
         borderRadius: '16px',
-        padding: '28px 28px 24px',
-        maxWidth: '380px', width: 'calc(100% - 32px)',
+        padding: '28px 24px 24px',
+        maxWidth: '380px', width: '100%',
         boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
         animation: 'slideUp 0.25s cubic-bezier(0.4,0,0.2,1)',
         textAlign: 'center',
@@ -75,50 +76,49 @@ function LogoutModal({ onConfirm, onCancel, loading }) {
           margin: '0 auto 16px', fontSize: '24px',
         }}>🚪</div>
 
-        <h2 style={{ margin: '0 0 8px', fontSize: '17px', fontWeight: '800', color: '#f0f6fc' }}>
+        <h2 style={{ margin: '0 0 8px', fontSize: '17px', fontWeight: '800', color: 'var(--text-primary, #f0f6fc)' }}>
           Keluar dari Akun?
         </h2>
-        <p style={{ margin: '0 0 24px', fontSize: '13px', color: '#8b949e', lineHeight: '1.5' }}>
+        <p style={{ margin: '0 0 24px', fontSize: '13px', color: 'var(--text-secondary, #8b949e)', lineHeight: '1.5' }}>
           Sesi Anda akan diakhiri. Pastikan semua transaksi sudah selesai sebelum keluar.
         </p>
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
+            type="button"
             onClick={onCancel}
             disabled={loading}
             style={{
               flex: 1, padding: '10px', borderRadius: '10px',
-              border: '1px solid rgba(240,246,252,0.15)',
-              background: 'rgba(240,246,252,0.06)',
-              color: '#8b949e', fontSize: '13px', fontWeight: '700',
+              border: '1px solid var(--border, rgba(240,246,252,0.15))',
+              background: 'transparent',
+              color: 'var(--text-primary, #f0f6fc)', fontSize: '13px', fontWeight: '700',
               cursor: 'pointer', transition: 'all 0.15s',
             }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(240,246,252,0.1)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(240,246,252,0.06)'}
           >
             Batal
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             disabled={loading}
             style={{
               flex: 1, padding: '10px', borderRadius: '10px',
               border: '1px solid rgba(239,68,68,0.4)',
-              background: loading ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.15)',
-              color: '#f87171', fontSize: '13px', fontWeight: '800',
+              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              color: '#ffffff', fontSize: '13px', fontWeight: '800',
               cursor: loading ? 'not-allowed' : 'pointer',
               transition: 'all 0.15s',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              boxShadow: '0 4px 14px rgba(239,68,68,0.3)',
             }}
-            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'rgba(239,68,68,0.25)' }}
-            onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'rgba(239,68,68,0.15)' }}
           >
             {loading ? (
               <>
                 <span style={{
                   width: '12px', height: '12px', borderRadius: '50%',
-                  border: '2px solid rgba(248,113,113,0.3)',
-                  borderTopColor: '#f87171',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  borderTopColor: '#ffffff',
                   display: 'inline-block',
                   animation: 'spin 0.7s linear infinite',
                 }} />
@@ -178,7 +178,7 @@ function ProfileDropdown({ user, profile, isAdmin, onLogoutRequest, theme, toggl
 
         {/* Name + role */}
         <div style={{ textAlign: 'left' }} className="hide-mobile">
-          <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#f0f6fc', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: '11.5px', fontWeight: '700', color: 'var(--text-primary, #f0f6fc)', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {userName}
           </div>
           <div style={{ fontSize: '9px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: isAdmin ? '#8b5cf6' : '#10b981' }}>
@@ -188,7 +188,7 @@ function ProfileDropdown({ user, profile, isAdmin, onLogoutRequest, theme, toggl
 
         {/* Chevron */}
         <span style={{
-          fontSize: '10px', color: '#656d76',
+          fontSize: '10px', color: 'var(--text-secondary, #656d76)',
           transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
           transition: 'transform 0.2s',
         }} className="hide-mobile">▼</span>
@@ -199,10 +199,10 @@ function ProfileDropdown({ user, profile, isAdmin, onLogoutRequest, theme, toggl
         <div style={{
           position: 'absolute', top: 'calc(100% + 8px)', right: 0,
           width: '220px',
-          background: '#1c2128',
-          border: '1px solid rgba(240,246,252,0.12)',
+          background: 'var(--bg-elevated, #1c2128)',
+          border: '1px solid var(--border, rgba(240,246,252,0.12))',
           borderRadius: '14px',
-          boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+          boxShadow: '0 16px 48px rgba(0,0,0,0.4)',
           overflow: 'hidden',
           animation: 'slideDown 0.18s cubic-bezier(0.4,0,0.2,1)',
           zIndex: 200,
@@ -210,13 +210,13 @@ function ProfileDropdown({ user, profile, isAdmin, onLogoutRequest, theme, toggl
           {/* User info header */}
           <div style={{
             padding: '14px 16px 12px',
-            borderBottom: '1px solid rgba(240,246,252,0.08)',
+            borderBottom: '1px solid var(--border, rgba(240,246,252,0.08))',
             background: isAdmin
               ? 'linear-gradient(135deg, rgba(139,92,246,0.1), transparent)'
               : 'linear-gradient(135deg, rgba(212,168,83,0.08), transparent)',
           }}>
-            <div style={{ fontSize: '13px', fontWeight: '800', color: '#f0f6fc', marginBottom: '2px' }}>{userName}</div>
-            <div style={{ fontSize: '11px', color: '#656d76', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+            <div style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-primary, #f0f6fc)', marginBottom: '2px' }}>{userName}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary, #656d76)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
             <div style={{ marginTop: '6px' }}>
               <span style={{
                 fontSize: '9px', fontWeight: '800', padding: '2px 7px', borderRadius: '4px',
@@ -239,26 +239,26 @@ function ProfileDropdown({ user, profile, isAdmin, onLogoutRequest, theme, toggl
             <button
               onClick={() => { toggleTheme(); }}
               style={dropdownBtnStyle}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(240,246,252,0.06)'}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--border-muted, rgba(240,246,252,0.06))'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               <span style={{ fontSize: '15px' }}>{theme === 'dark' ? '☀️' : '🌙'}</span>
-              <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#8b949e' }}>
+              <span style={{ fontSize: '12.5px', fontWeight: '600', color: 'var(--text-secondary, #8b949e)' }}>
                 Mode {theme === 'dark' ? 'Terang' : 'Gelap'}
               </span>
             </button>
 
-            <div style={{ height: '1px', background: 'rgba(240,246,252,0.08)', margin: '6px 0' }} />
+            <div style={{ height: '1px', background: 'var(--border, rgba(240,246,252,0.08))', margin: '6px 0' }} />
 
             {/* Logout */}
             <button
               onClick={() => { setOpen(false); onLogoutRequest() }}
-              style={{ ...dropdownBtnStyle, color: '#f87171' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.querySelector('span:last-child').style.color = '#f87171' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.querySelector('span:last-child').style.color = '#f87171' }}
+              style={{ ...dropdownBtnStyle, color: '#ef4444' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.querySelector('span:last-child').style.color = '#ef4444' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.querySelector('span:last-child').style.color = '#ef4444' }}
             >
               <span style={{ fontSize: '15px' }}>🚪</span>
-              <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#f87171' }}>Keluar dari Akun</span>
+              <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#ef4444' }}>Keluar dari Akun</span>
             </button>
           </div>
         </div>
@@ -283,10 +283,10 @@ function DropdownItem({ icon, label, to, onClick }) {
         display: 'flex', alignItems: 'center', gap: '10px',
         padding: '8px 10px', borderRadius: '8px', textDecoration: 'none',
         transition: 'background 0.12s',
-        color: '#8b949e',
+        color: 'var(--text-secondary, #8b949e)',
       }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(240,246,252,0.06)'; e.currentTarget.style.color = '#f0f6fc' }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8b949e' }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--border-muted, rgba(240,246,252,0.06))'; e.currentTarget.style.color = 'var(--text-primary, #f0f6fc)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary, #8b949e)' }}
     >
       <span style={{ fontSize: '15px' }}>{icon}</span>
       <span style={{ fontSize: '12.5px', fontWeight: '600' }}>{label}</span>
@@ -356,7 +356,7 @@ export default function AppLayout() {
     setLoggingOut(true)
     try {
       await signOut()
-      navigate('/')
+      navigate('/login')
     } finally {
       setLoggingOut(false)
       setShowLogout(false)
@@ -438,39 +438,38 @@ export default function AppLayout() {
         >✕</button>
       </div>
 
-      {/* Tab Switcher — only for admin users */}
-      {isAdmin && user && (
-        <div style={{
-          display: 'flex', padding: '8px 8px 0',
-          gap: '4px',
-          borderBottom: '1px solid rgba(240,246,252,0.06)',
-          paddingBottom: '8px',
-          background: 'rgba(0,0,0,0.15)',
-        }}>
-          <button onClick={() => setDrawerTab('member')} style={{
-            flex: 1, padding: '7px 4px', borderRadius: '8px', border: 'none',
-            fontSize: '11px', fontWeight: '700', cursor: 'pointer',
-            background: drawerTab === 'member' ? 'rgba(212,168,83,0.18)' : 'transparent',
-            color: drawerTab === 'member' ? '#d4a853' : '#656d76',
-            borderBottom: drawerTab === 'member' ? '2px solid #d4a853' : '2px solid transparent',
-            transition: 'all 0.15s',
-          }}>👤 Nasabah</button>
-          <button onClick={() => setDrawerTab('admin')} style={{
-            flex: 1, padding: '7px 4px', borderRadius: '8px', border: 'none',
-            fontSize: '11px', fontWeight: '700', cursor: 'pointer',
-            background: drawerTab === 'admin' ? 'rgba(139,92,246,0.18)' : 'transparent',
-            color: drawerTab === 'admin' ? '#8b5cf6' : '#656d76',
-            borderBottom: drawerTab === 'admin' ? '2px solid #8b5cf6' : '2px solid transparent',
-            transition: 'all 0.15s',
-          }}>🛡️ Admin</button>
-        </div>
-      )}
-
       {/* Nav area */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 8px' }}>
 
-        {/* ── MEMBER NAV (grouped) ── */}
-        {drawerTab === 'member' && (
+        {/* ── JIKA ADMIN: Langsung tampilkan Menu Operasional Admin (tanpa dashboard member) ── */}
+        {isAdmin ? (
+          <>
+            <div style={{
+              fontSize: '9px', fontWeight: '800', color: 'var(--accent-purple, #8b5cf6)',
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+              padding: '0 8px 8px', marginBottom: '4px',
+            }}>Menu Operasional Admin</div>
+            {ADMIN_NAV.map(item => {
+              const active = location.pathname === item.path || location.pathname === item.to
+              const to = item.path || item.to
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setSidebarOpen(false)}
+                  style={adminLink(active)}
+                  onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(139,92,246,0.14)'; e.currentTarget.style.color = '#c4b5fd' } }}
+                  onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'rgba(139,92,246,0.06)'; e.currentTarget.style.color = 'var(--accent-purple, #8b5cf6)' } }}
+                >
+                  <span style={{ fontSize: '15px' }}>{item.icon}</span>
+                  <span>{item.label}</span>
+                  {active && <span style={{ marginLeft: 'auto', width: '6px', height: '6px', borderRadius: '50%', background: '#c4b5fd', flexShrink: 0 }} />}
+                </Link>
+              )
+            })}
+          </>
+        ) : (
+          /* ── JIKA MEMBER: Tampilkan Menu Member ── */
           <>
             {user ? (
               <>
@@ -486,7 +485,7 @@ export default function AppLayout() {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '9.5px', color: '#656d76', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Saldo</div>
+                    <div style={{ fontSize: '9.5px', color: 'var(--text-secondary, #656d76)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Saldo</div>
                     <div style={{ fontSize: '14px', fontWeight: '800', color: '#10b981', marginTop: '2px' }}>
                       {balanceVisible ? formatRupiah(totalBalance) : '••••••'}
                     </div>
@@ -498,7 +497,7 @@ export default function AppLayout() {
                 {SIDEBAR_GROUPS.map((group) => (
                   <div key={group.label} style={{ marginBottom: '12px' }}>
                     <div style={{
-                      fontSize: '9px', fontWeight: '800', color: '#656d76',
+                      fontSize: '9px', fontWeight: '800', color: 'var(--text-secondary, #656d76)',
                       textTransform: 'uppercase', letterSpacing: '0.1em',
                       padding: '0 8px 6px',
                     }}>{group.label}</div>
@@ -510,13 +509,13 @@ export default function AppLayout() {
                           to={item.to}
                           onClick={() => setSidebarOpen(false)}
                           style={memberLink(active)}
-                          onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(240,246,252,0.05)'; e.currentTarget.style.color = '#f0f6fc' } }}
-                          onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8b949e' } }}
+                          onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--border-muted, rgba(240,246,252,0.05))'; e.currentTarget.style.color = 'var(--text-primary, #f0f6fc)' } }}
+                          onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary, #8b949e)' } }}
                         >
                           <span style={{ fontSize: '15px' }}>{item.icon}</span>
                           <div>
                             <div style={{ lineHeight: 1.2 }}>{item.label}</div>
-                            {!active && <div style={{ fontSize: '9.5px', color: active ? 'rgba(13,17,23,0.6)' : '#656d76', marginTop: '1px' }}>{item.desc}</div>}
+                            {!active && <div style={{ fontSize: '9.5px', color: 'var(--text-secondary, #656d76)', marginTop: '1px' }}>{item.desc}</div>}
                           </div>
                         </Link>
                       )
@@ -527,7 +526,7 @@ export default function AppLayout() {
             ) : (
               <div style={{ padding: '24px 12px', textAlign: 'center' }}>
                 <div style={{ fontSize: '32px', marginBottom: '10px' }}>🔐</div>
-                <div style={{ fontSize: '12px', color: '#656d76', marginBottom: '14px' }}>Masuk untuk mengakses menu nasabah</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary, #656d76)', marginBottom: '14px' }}>Masuk untuk mengakses menu nasabah</div>
                 <Link to="/login" onClick={() => setSidebarOpen(false)} style={{
                   display: 'inline-block', padding: '8px 20px', borderRadius: '8px',
                   background: 'linear-gradient(135deg, #d4a853, #b8892e)',
@@ -535,50 +534,6 @@ export default function AppLayout() {
                 }}>Masuk Sekarang</Link>
               </div>
             )}
-          </>
-        )}
-
-        {/* ── ADMIN NAV ── */}
-        {drawerTab === 'admin' && isAdmin && (
-          <>
-            <div style={{
-              fontSize: '9px', fontWeight: '800', color: '#8b5cf6',
-              textTransform: 'uppercase', letterSpacing: '0.1em',
-              padding: '0 8px 8px', marginBottom: '4px',
-            }}>Menu Operasional Admin</div>
-            {ADMIN_NAV.map(item => {
-              const active = location.pathname === item.path || location.pathname === item.to
-              const to = item.path || item.to
-              return (
-                <Link
-                  key={to}
-                  to={to}
-                  onClick={() => setSidebarOpen(false)}
-                  style={adminLink(active)}
-                  onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(139,92,246,0.14)'; e.currentTarget.style.color = '#c4b5fd' } }}
-                  onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'rgba(139,92,246,0.06)'; e.currentTarget.style.color = '#a78bfa' } }}
-                >
-                  <span style={{ fontSize: '15px' }}>{item.icon}</span>
-                  <span>{item.label}</span>
-                  {active && <span style={{ marginLeft: 'auto', width: '6px', height: '6px', borderRadius: '50%', background: '#c4b5fd', flexShrink: 0 }} />}
-                </Link>
-              )
-            })}
-            <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(240,246,252,0.06)' }}>
-              <Link
-                to="/dashboard"
-                onClick={() => { setSidebarOpen(false); setDrawerTab('member') }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  padding: '8px 12px', borderRadius: '8px', textDecoration: 'none',
-                  color: '#d4a853', fontSize: '12px', fontWeight: '600',
-                  background: 'rgba(212,168,83,0.08)',
-                  border: '1px dashed rgba(212,168,83,0.3)',
-                }}
-              >
-                <span>👤</span><span>Buka Portal Nasabah ↗</span>
-              </Link>
-            </div>
           </>
         )}
       </div>
@@ -628,7 +583,7 @@ export default function AppLayout() {
 
   // ── Normal pages → sidebar + topbar ────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'hidden', background: 'var(--bg-primary, #0d1117)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'hidden', background: 'var(--bg, #0d1117)' }}>
 
       {/* Logout Modal */}
       {showLogout && (
@@ -653,9 +608,9 @@ export default function AppLayout() {
       {/* ─── Topbar ───────────────────────────────────────────────────────── */}
       <header style={{
         position: 'fixed', top: 0, left: 0, right: 0, height: '56px', zIndex: 100,
-        background: 'rgba(13,17,23,0.92)',
+        background: 'var(--glass2, rgba(13,17,23,0.92))',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(240,246,252,0.08)',
+        borderBottom: '1px solid var(--border, rgba(240,246,252,0.08))',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 16px',
       }}>
@@ -667,7 +622,7 @@ export default function AppLayout() {
             className="mobile-only"
             style={{
               width: '34px', height: '34px', borderRadius: '8px', border: 'none',
-              background: 'rgba(240,246,252,0.08)', color: '#8b949e',
+              background: 'rgba(240,246,252,0.08)', color: 'var(--text-secondary, #8b949e)',
               cursor: 'pointer', fontSize: '16px', display: 'none', placeItems: 'center',
             }}
           >☰</button>
@@ -681,7 +636,7 @@ export default function AppLayout() {
               color: '#0d1117', fontWeight: '900', fontSize: '14px',
               boxShadow: '0 2px 8px rgba(212,168,83,0.35)',
             }}>N</div>
-            <span style={{ fontWeight: '800', fontSize: '13px', color: '#f0f6fc', letterSpacing: '0.03em', whiteSpace: 'nowrap' }} className="hide-mobile-sm">
+            <span style={{ fontWeight: '800', fontSize: '13px', color: 'var(--text-primary, #f0f6fc)', letterSpacing: '0.03em', whiteSpace: 'nowrap' }} className="hide-mobile-sm">
               NARAYAN{' '}
               <span style={{ background: '#d4a853', color: '#0d1117', padding: '1px 5px', borderRadius: '4px', fontSize: '8px', fontWeight: '800' }}>VIRTUAL BANK</span>
             </span>
@@ -720,8 +675,8 @@ export default function AppLayout() {
               display: 'flex', alignItems: 'center', gap: '5px',
               padding: '5px 10px', borderRadius: '8px',
               background: 'rgba(240,246,252,0.06)',
-              border: '1px solid rgba(240,246,252,0.1)',
-              color: '#8b949e', fontSize: '11.5px', cursor: 'pointer',
+              border: '1px solid var(--border, rgba(240,246,252,0.1))',
+              color: 'var(--text-secondary, #8b949e)', fontSize: '11.5px', cursor: 'pointer',
             }}
           >
             <span>🔍</span>
@@ -793,8 +748,8 @@ export default function AppLayout() {
           className="desktop-sidebar"
           style={{
             width: '240px', flexShrink: 0,
-            background: '#161b22',
-            borderRight: '1px solid rgba(240,246,252,0.08)',
+            background: 'var(--bg-surface, #161b22)',
+            borderRight: '1px solid var(--border, rgba(240,246,252,0.08))',
             position: 'fixed', top: '56px', left: 0,
             height: 'calc(100vh - 56px)',
             overflowY: 'auto',
@@ -810,8 +765,8 @@ export default function AppLayout() {
           style={{
             position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 150,
             width: '280px',
-            background: '#161b22',
-            borderRight: '1px solid rgba(240,246,252,0.1)',
+            background: 'var(--bg-surface, #161b22)',
+            borderRight: '1px solid var(--border, rgba(240,246,252,0.1))',
             boxShadow: '4px 0 32px rgba(0,0,0,0.6)',
             overflowY: 'auto',
             transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
@@ -879,4 +834,29 @@ const layoutCSS = `
   .main-content::-webkit-scrollbar-track { background: transparent; }
   .main-content::-webkit-scrollbar-thumb { background: rgba(240,246,252,0.08); border-radius: 6px; }
   .main-content::-webkit-scrollbar-thumb:hover { background: rgba(240,246,252,0.15); }
+
+  /* Light mode sidebar & topbar overrides */
+  body.light-mode .desktop-sidebar,
+  body.light-mode .mobile-sidebar {
+    background: #ffffff !important;
+    border-right-color: rgba(15,23,42,0.1) !important;
+  }
+  body.light-mode header {
+    background: rgba(255,255,255,0.97) !important;
+    border-bottom-color: rgba(15,23,42,0.1) !important;
+  }
+  body.light-mode .main-content {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+  }
+  /* Sidebar link text in light mode */
+  body.light-mode .desktop-sidebar *,
+  body.light-mode .mobile-sidebar * {
+    color: inherit;
+  }
+  /* Sidebar topbar button backgrounds */
+  body.light-mode header button,
+  body.light-mode header a {
+    color: inherit;
+  }
 `

@@ -61,6 +61,11 @@ function ProtectedRoute({ requiredRole }) {
 
   if (!user) return <Navigate to="/login" replace />
 
+  // Admin dan Super Admin langsung diarahkan ke panel admin (buang dashboard member untuk admin)
+  if (!requiredRole && (role === 'ADMIN' || role === 'SUPER_ADMIN')) {
+    return <Navigate to="/admin" replace />
+  }
+
   if (requiredRole === 'ADMIN' && role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
     return <Navigate to="/dashboard" replace />
   }

@@ -2,11 +2,14 @@
 // Provider utama untuk autentikasi Supabase.
 // Mendukung Cloud Supabase Auth dan Local Demo Mode (offline / dev mode).
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { supabase, isSupabaseConfigured } from '../../services/supabase/client'
 
 const AuthContext = createContext(null)
 const DEMO_SESSION_KEY = 'nvb_demo_session_v1'
+const LAST_ACTIVITY_KEY = 'nvb_last_activity_ts'
+const SESSION_EXPIRED_KEY = 'nvb_session_expired_notice'
+const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000 // 1 jam (60 menit)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -14,6 +17,14 @@ export function AuthProvider({ children }) {
   const [role, setRole] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [sessionNotice, setSessionNotice] = useState(() => {
+    try {
+      return localStorage.getItem(SESSION_EXPIRED_KEY) || ''
+    } catch {
+      return ''
+    }
+  })
+  const lastActivityUpdateRef = useRef(0)
 
   const fetchUserData = useCallback(async (userId) => {
     if (!userId) {
@@ -212,7 +223,8 @@ export function AuthProvider({ children }) {
       setUser(demoUser)
       setProfile(demoProfile)
       setRole(assignedRole)
-      return { ok: true, data: { user: demoUser } }
+      recordActivity()
+      return { ok: true, data: { user: demoUser }, role: assignedRole }
     }
 
     // Cloud Mode Sign In
@@ -225,11 +237,73 @@ export function AuthProvider({ children }) {
       setError(err.message)
       return { ok: false, error: err.message }
     }
-    return { ok: true, data }
+
+    recordActivity()
+
+    let detectedRole = 'MEMBER'
+    if (data?.user?.id) {
+      await fetchUserData(data.user.id)
+      try {
+        const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', data.user.id)
+        if (roleData && roleData.length > 0) {
+          const roles = Array.isArray(roleData) ? roleData.map((r) => r.role) : [roleData.role]
+          if (roles.includes('SUPER_ADMIN')) detectedRole = 'SUPER_ADMIN'
+          else if (roles.includes('ADMIN')) detectedRole = 'ADMIN'
+        } else if (data.user.email?.toLowerCase().includes('admin')) {
+          detectedRole = 'ADMIN'
+        }
+      } catch {}
+    }
+
+    return { ok: true, data, role: detectedRole }
   }
+
+  // ─── 1-Hour Session Inactivity Monitor ─────────────────────────────────────
+  const recordActivity = useCallback(() => {
+    const now = Date.now()
+    if (now - lastActivityUpdateRef.current > 10000) {
+      lastActivityUpdateRef.current = now
+      try {
+        localStorage.setItem(LAST_ACTIVITY_KEY, String(now))
+      } catch {}
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!user) return
+
+    recordActivity()
+
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click']
+    const handleUserInteraction = () => recordActivity()
+
+    events.forEach((evt) => window.addEventListener(evt, handleUserInteraction, { passive: true }))
+
+    const interval = setInterval(() => {
+      try {
+        const last = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || Date.now())
+        if (Date.now() - last >= INACTIVITY_TIMEOUT_MS) {
+          const noticeMsg = 'Sesi login Anda telah berakhir otomatis karena tidak ada aktivitas selama 1 jam. Silakan masuk kembali.'
+          try {
+            localStorage.setItem(SESSION_EXPIRED_KEY, noticeMsg)
+          } catch {}
+          setSessionNotice(noticeMsg)
+          signOut()
+        }
+      } catch {}
+    }, 15000)
+
+    return () => {
+      events.forEach((evt) => window.removeEventListener(evt, handleUserInteraction))
+      clearInterval(interval)
+    }
+  }, [user, recordActivity])
 
   // Sign Out
   const signOut = async () => {
+    try {
+      localStorage.removeItem(LAST_ACTIVITY_KEY)
+    } catch {}
     if (!isSupabaseConfigured) {
       localStorage.removeItem(DEMO_SESSION_KEY)
     } else {
@@ -238,6 +312,13 @@ export function AuthProvider({ children }) {
     setUser(null)
     setProfile(null)
     setRole(null)
+  }
+
+  const clearSessionNotice = () => {
+    setSessionNotice('')
+    try {
+      localStorage.removeItem(SESSION_EXPIRED_KEY)
+    } catch {}
   }
 
   const refreshProfile = () => fetchUserData(user?.id)
@@ -258,6 +339,9 @@ export function AuthProvider({ children }) {
         isSuperAdmin,
         isMember,
         isSupabaseConfigured,
+        sessionNotice,
+        clearSessionNotice,
+        recordActivity,
         signUp,
         signIn,
         signOut,
