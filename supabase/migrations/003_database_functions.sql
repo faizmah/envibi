@@ -620,8 +620,14 @@ BEGIN
     RETURN jsonb_build_object('ok', false, 'error', 'Token NFC tidak cocok dengan kotak ini');
   END IF;
   
-  IF v_box.status NOT IN ('SHIPPED', 'RECEIVED', 'NFC_PENDING') THEN
-    RETURN jsonb_build_object('ok', false, 'error', 'Status kotak tidak memungkinkan aktivasi');
+  -- Jika kotak sudah aktif
+  IF v_box.status = 'ACTIVE' THEN
+    RETURN jsonb_build_object('ok', true, 'box_id', p_box_id, 'status', 'ACTIVE', 'message', 'Kotak tabungan sudah aktif sebelumnya');
+  END IF;
+
+  -- Izinkan aktivasi untuk status yang wajar sebelum aktif (termasuk READY_TO_SHIP setelah NFC ditulis)
+  IF v_box.status NOT IN ('READY_TO_SHIP', 'SHIPPED', 'RECEIVED', 'NFC_PENDING', 'PREPARING') THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'Status kotak saat ini (' || v_box.status || ') tidak memungkinkan aktivasi');
   END IF;
   
   -- Aktifkan kotak
